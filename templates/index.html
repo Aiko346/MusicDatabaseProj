@@ -1,14 +1,14 @@
 <html>
-  <style>
-    body{ 
-      font-size: 15pt;
-      font-family: arial;
-    }
-  </style>
+<style>
+  body {
+    font-size: 15pt;
+    font-family: arial;
+  }
+</style>
 
 
 <body>
-  <h1>Some famous Computer Scientists</h1>
+  <h1>Welcome to Playlist Filter!</h1>
   <div>{{data}}</div>
 
   <div>
@@ -17,11 +17,35 @@
     {% endfor %}
   </div>
 
-<p><a href="another">Go to the other page</a></p>
+  <p><a href="another">Go to the other page</a></p>
 
-<form method="POST" action="/add">
-<p>Name of new computer scientist: <input type="text" name="name"> <input type="submit" value="Add"></p>
-</form>
+  <form method="POST" action="/add">
+    <p>Name of new computer scientist: <input type="text" name="name"> <input type="submit" value="Add"></p>
+  </form>
+
+
+  <form method="POST" action="/filter">
+    <input type="radio" id="liked-by" name="filter_option" value="liked-by">
+    <label for="liked-by">Liked By</label><br>
+    <input type="radio" id="album" name="filter_option"  value="album">
+    <label for="album">Album</label><br>
+    <input type="radio" id="playlist" name="filter_option"  value="playlist">
+    <label for="playlist">Playlist</label>
+    <input type="radio" id="artist" name="filter_option"  value="artist">
+    <label for="artist">Artist</label>
+    <input type="radio" id="mood" name="filter_option"  value="mood">
+    <label for="mood">Mood</label>
+    <input type="submit" value="Submit">
+  </form>
+
+  <p>Make a new playlist with these songs</p>
+  <form method="POST" action="/add">
+    <input type="text" id="playlist-name" name="filter_option" value="liked-by">
+    <label for="playlist-name">Name of your new playlist</label><br>
+    <textarea id="playlist-description" name="playlist-description" rows="4" cols="50"></textarea>
+    <label for="playlist-description">Description of your new playlist</label><br>
+    <input type="submit" value="Make New Playlist">
+  </form>
 
 </body>
 

@@ -17,7 +17,6 @@ from flask import Flask, request, render_template, g, redirect, Response
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
 
-
 #
 # The following is a dummy URI that does not connect to a valid database. You will need to modify it to connect to your Part 2 database in order to use the data.
 #
@@ -47,6 +46,9 @@ engine.execute("""CREATE TABLE IF NOT EXISTS test (
 );""")
 engine.execute("""INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');""")
 
+# track current filter params in session
+# format session.filter_yes={playlist: [], song: [], mood: [], artist:[], album[], liked_by[]}
+# format session.filter_no={playlist: [], song: [], mood: [], artist:[], album[], liked_by[]}
 
 @app.before_request
 def before_request():
@@ -63,6 +65,10 @@ def before_request():
     print("uh oh, problem connecting to database")
     import traceback; traceback.print_exc()
     g.conn = None
+
+  
+  
+
 
 @app.teardown_request
 def teardown_request(exception):
@@ -176,6 +182,19 @@ def login():
     abort(401)
     this_is_never_executed()
 
+@app.route('/filter', methods=['POST'])
+def add():
+  filter_option = request.form['filter-option']
+  #g.conn.execute('INSERT INTO test(name) VALUES (%s)', name)
+
+  
+  return redirect('/')
+
+@app.route('/add', methods=['POST'])
+def add():
+  name = request.form['name']
+  g.conn.execute('INSERT INTO test(name) VALUES (%s)', name)
+  return redirect('/')
 
 if __name__ == "__main__":
   import click

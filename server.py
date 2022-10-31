@@ -183,7 +183,7 @@ def login():
     this_is_never_executed()
 
 @app.route('/filter', methods=['POST'])
-def add():
+def filter():
   filter_option = request.form['filter-option']
   #g.conn.execute('INSERT INTO test(name) VALUES (%s)', name)
 
@@ -191,7 +191,7 @@ def add():
   return redirect('/')
 
 @app.route('/new-playlist', methods=['POST'])
-def add():
+def new_playlist():
   name = request.form['name']
   g.conn.execute('INSERT INTO test(name) VALUES (%s)', name)
   return redirect('/')

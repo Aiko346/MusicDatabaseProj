@@ -16,7 +16,7 @@ from flask import Flask, request, render_template, g, redirect, Response, sessio
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
-app.config['SECRET_KEY'] = '123'
+app.secret_key = '1234'
 #
 # The following is a dummy URI that does not connect to a valid database. You will need to modify it to connect to your Part 2 database in order to use the data.
 #
@@ -44,7 +44,7 @@ engine.execute("""CREATE TABLE IF NOT EXISTS test (
   id serial,
   name text
 );""")
-engine.execute("""INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');""")
+#engine.execute("""INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');""")
 
 # track current filter params in session
 # format session.filter_yes={playlist: [], song: [], mood: [], artist:[], album[], liked_by[]}
@@ -109,7 +109,7 @@ def index():
   """
 
   # DEBUG: this is debugging code to see what request looks like
-  print(request.args)
+ # print(request.args)
 
 
   #
@@ -195,12 +195,15 @@ def new_playlist():
   name = request.form['playlist-name']
   description = request.form['playlist-description']
   g.conn.execute('INSERT INTO new_playlists(name, description) VALUES (%s, %s)', name, description)
+  print("testing new_playlist()")
   if 'playlist' in session:
-    for name in session['playlist']:  
-        print(name)
+    for playlist_name in session['playlist']:  
+        print(len(session['playlist']))
+        print(playlist_name)
     session['playlist'].append(name)
   else:
-    session['playlist'] = [name]
+    session['playlist'] = []
+    session['playlist'].append(name)
   return redirect('/')
 
 if __name__ == "__main__":

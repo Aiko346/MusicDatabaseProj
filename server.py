@@ -190,7 +190,7 @@ def add():
   
   return redirect('/')
 
-@app.route('/add', methods=['POST'])
+@app.route('/new-playlist', methods=['POST'])
 def add():
   name = request.form['name']
   g.conn.execute('INSERT INTO test(name) VALUES (%s)', name)

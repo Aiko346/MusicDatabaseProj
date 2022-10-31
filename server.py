@@ -192,11 +192,11 @@ def filter():
 
 @app.route('/new-playlist', methods=['POST'])
 def new_playlist():
-  print(session['playlist'])
   name = request.form['playlist-name']
   description = request.form['playlist-description']
   g.conn.execute('INSERT INTO new-playlists(name, description) VALUES (%s, %s)', name, description)
-  if session['playlist'] != []:
+  if 'playlist' in session:
+    print(session['playlist'])
     session['playlist'] = [name]
   else:
     session['playlist'].append(name)

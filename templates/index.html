@@ -30,17 +30,17 @@
     <input type="radio" id="album" name="filter_option"  value="album">
     <label for="album">Album</label><br>
     <input type="radio" id="playlist" name="filter_option"  value="playlist">
-    <label for="playlist">Playlist</label>
+    <label for="playlist">Playlist</label><br>
     <input type="radio" id="artist" name="filter_option"  value="artist">
-    <label for="artist">Artist</label>
+    <label for="artist">Artist</label><br>
     <input type="radio" id="mood" name="filter_option"  value="mood">
-    <label for="mood">Mood</label>
+    <label for="mood">Mood</label><br>
     <input type="submit" value="Submit">
   </form>
 
   <p>Make a new playlist with these songs</p>
   <form method="POST" action="/new-playlist">
-    <input type="text" id="playlist-name" name="filter_option" value="liked-by">
+    <input type="text" id="playlist-name" name="playlist-name" >
     <label for="playlist-name">Name of your new playlist</label><br>
     <textarea id="playlist-description" name="playlist-description" rows="4" cols="50"></textarea>
     <label for="playlist-description">Description of your new playlist</label><br>

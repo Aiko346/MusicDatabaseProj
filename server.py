@@ -192,8 +192,14 @@ def filter():
 
 @app.route('/new-playlist', methods=['POST'])
 def new_playlist():
-  name = request.form['name']
-  g.conn.execute('INSERT INTO test(name) VALUES (%s)', name)
+  print(session['playlist'])
+  name = request.form['playlist-name']
+  description = request.form['playlist-description']
+  g.conn.execute('INSERT INTO new-playlists(name, description) VALUES (%s, %s)', name, description)
+  if session['playlist'] != []:
+    session['playlist'] = [name]
+  else
+    session['playlist'].append(name)
   return redirect('/')
 
 if __name__ == "__main__":

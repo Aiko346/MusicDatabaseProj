@@ -198,7 +198,7 @@ def new_playlist():
   g.conn.execute('INSERT INTO new-playlists(name, description) VALUES (%s, %s)', name, description)
   if session['playlist'] != []:
     session['playlist'] = [name]
-  else
+  else:
     session['playlist'].append(name)
   return redirect('/')
 

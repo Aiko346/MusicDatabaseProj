@@ -24,28 +24,54 @@
   </form>
 
 
-  <form method="POST" action="/filter">
-    <input type="radio" id="liked-by" name="filter_option" value="liked-by">
-    <label for="liked-by">Liked By</label><br>
-    <input type="radio" id="album" name="filter_option"  value="album">
-    <label for="album">Album</label><br>
-    <input type="radio" id="playlist" name="filter_option"  value="playlist">
-    <label for="playlist">Playlist</label><br>
-    <input type="radio" id="artist" name="filter_option"  value="artist">
-    <label for="artist">Artist</label><br>
-    <input type="radio" id="mood" name="filter_option"  value="mood">
-    <label for="mood">Mood</label><br>
-    <input type="submit" value="Submit">
+  <form method="POST" action="/filter" id="filtering-form">
+    <fieldset>
+      <legend>Filtering Options</legend>
+      <input type="radio" id="liked-by" name="filter_option" value="liked-by">
+      <label for="liked-by">Liked By</label><br>
+      <input type="radio" id="album" name="filter_option" value="album">
+      <label for="album">Album</label><br>
+      <input type="radio" id="playlist" name="filter_option" value="playlist">
+      <label for="playlist">Playlist</label><br>
+      <input type="radio" id="artist" name="filter_option" value="artist">
+      <label for="artist">Artist</label><br>
+      <input type="radio" id="mood" name="filter_option" value="mood">
+      <label for="mood">Mood</label><br>
+      <input type="submit" value="Submit">
+    </fieldset>
+    <fieldset id="album-options">
+      <input type="radio" id="liked-by-2" name="filter_option_2" value="liked-by">
+      <label for="liked-by-2">Liked By</label><br>
+      <input type="radio" id="album-2" name="filter_option_2" value="album">
+      <label for="album-2">Album</label><br>
+    </fieldset>
   </form>
 
   <p>Make a new playlist with these songs</p>
   <form method="POST" action="/new-playlist">
-    <input type="text" id="playlist-name" name="playlist-name" >
+    <input type="text" id="playlist-name" name="playlist-name">
     <label for="playlist-name">Name of your new playlist</label><br>
     <textarea id="playlist-description" name="playlist-description" rows="4" cols="50"></textarea>
     <label for="playlist-description">Description of your new playlist</label><br>
     <input type="submit" value="Make New Playlist">
   </form>
+
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <script src="jquery.js"></script>
+  <script>
+    $(document).ready(function () {
+      $("#filtering-form").click(function () {
+        console.log("testing");
+        if ($("#album").is(":checked")) {
+          $("#album-options").show();
+          console.log("checked");
+        } else {
+          $("#album-options").hide();
+          console.log("unchecked");
+        }
+      });
+    });
+  </script>
 
 </body>
 

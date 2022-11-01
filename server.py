@@ -196,14 +196,19 @@ def new_playlist():
   description = request.form['playlist-description']
   g.conn.execute('INSERT INTO new_playlists(name, description) VALUES (%s, %s)', name, description)
   print("testing new_playlist()")
-  if 'playlist' in session:
-    for playlist_name in session['playlist']:  
-        print(len(session['playlist']))
-        print(playlist_name)
-    session['playlist'].append(name)
-  else:
-    session['playlist'] = []
-    session['playlist'].append(name)
+  # if 'playlist' in session:
+  #   print("%s test", name)
+  #   for key in session.keys():  
+  #       print(session[key])
+  #   session[name].append(name)
+  #   for playlist_name in session['playlist']:  
+  #       print(len(session['playlist']))
+  #       print(playlist_name)
+  #   print()
+  # else:
+  #   session['playlist'] = []
+  #   print(type(session['playlist']))
+  #   session['playlist'].append(name)
   return redirect('/')
 
 if __name__ == "__main__":

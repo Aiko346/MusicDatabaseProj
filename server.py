@@ -8,7 +8,8 @@ import spotipy
 import spotipy.util as util
 
 app = Flask(__name__)
-redirect_uri = "http://127.0.0.1:8111/data-processing"
+#redirect_uri = "http://127.0.0.1:8111/data-processing"
+redirect_uri = "http://localhost:8111/data-processing"
 client_id = "67bdc4b1d4d74f5d88cdab031fee6a41"
 client_secret = "1a88af0b600d4ce3bf81c5191ae3aac0"
 scopes = "playlist-read-private,user-read-private,user-read-email,user-library-read"
@@ -238,7 +239,7 @@ def add_friend():
       if result.status_code != 200:
           #can't refresh, need to log in to spotify again
           print("status code !200" + str(result.status_code))
-          redirect_uri = "http://127.0.0.1:8111/add-friend"
+          redirect_uri = "http://localhost:8111/add-friend"
           return redirect("/get-data")
       print("status code 200" + str(result.status_code))
     else:
@@ -264,7 +265,7 @@ def login():
     session['username'] = username
     
     #return redirect('/')
-    redirect_uri = "http://127.0.0.1:8111/data-processing"
+    redirect_uri = "http://localhost:8111/data-processing"
     return redirect('/get-data')
   return render_template("login.html")
 

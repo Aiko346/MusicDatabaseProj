@@ -32,7 +32,7 @@ from flask import Flask, request, render_template, g, redirect, Response, sessio
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
-#app.debug = True
+app.debug = True
 app.secret_key = '648e2097fec28316b68b70c56305fdb6d2c07c82e4f00fce04e26ff0230eb3e4'
 # app.config['SECRET_KEY'] = '648e2097fec28316b68b70c56305fdb6d2c07c82e4f00fce04e26ff0230eb3e4'
 # toolbar = DebugToolbarExtension(app)
@@ -171,7 +171,8 @@ def index():
   #     <div>{{n}}</div>
   #     {% endfor %}
   #
-  context = dict(data = names)
+  testlist = ["a", "b", "c"]
+  context = dict(data = names, testlist=testlist)
 
 
   #
@@ -229,7 +230,7 @@ def data_processing():
   session["access_token"] = r["access_token"]
   session["refresh_token"] = r["refresh_token"]
 
-  #session["spotipy"] = spotipy.Spotify(auth=session["access_token"])
+  
   return redirect("/login")
 
 @app.route('/fill-home')
@@ -254,12 +255,32 @@ def add_friend():
       })
       if result.status_code != 200:
           return redirect("/get-data")
-    else:
-      #code to add friend to database, to make liked_by relationships 
-      print("request method post")
+      sp = spotipy.Spotify(auth=session["access_token"])
+      user_info = sp.user(request.form["friend-id"])
+      display_name = user_info["display_name"] 
+      user_playlist_info = sp.user_playlists(request.form["friend-id"], limit = 2) #5 max
+      print(user_playlist_info)
+      user_playlist_ids = []
+      for item in user_playlist_info["items"]:
+        user_playlist_ids.append(item["uri"])
+      #add display_name to sql
+      for uri in user_playlist_ids:
+        tracks = sp.user_playlist_tracks(request.form["friend-id"], uri[17:])
+        print(tracks)
+        #limit at 100 per playlist due to speed
+        #check if tracks in Tracks for user already, if so create Liked_By relationship
+      print()
       
-    #result = result.json()
-    return redirect("/")
+    #    # c = sp.current_user_playlists(limit = 10)
+    # # for item in c["items"]:
+    # #     print(item['description'])
+    # #     print(item["name"])
+    # #     print(item[])
+    # playlist_data = sp.user_playlist(user="zsp0yz1vi3brxtpz39a8zefqk",
+    #                                  playlist_id="5RuV6Qo9qJMrJ49NwTIYRW", fields="tracks,id,next,name,description")
+      
+   
+    return redirect("/fill-home")
 
 
 @app.route('/login', methods=['GET', 'POST'])

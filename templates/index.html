@@ -17,10 +17,19 @@
     {% endfor %}
   </div>
 
+  
+
   <p><a href="register">Register</a></p>
   
   {% if 'username' in session %}
   <p><a href="logout">Logout</a></p>
+  
+  <p>Add a friend</p>
+  <form method="POST" action="/add-friend">
+    <input type="text" id="friend-id" name="friend-id">
+    <label for="friend-id">Spotify id (look at the URI of their profile for a 22-char string)</label><br>
+    <input type="submit" value="Add friend">
+  </form>
   {% else %}
   <p><a href="login">Login</a></p>
   {% endif %}

@@ -1,3 +1,17 @@
+from flask import Flask, redirect, url_for, request
+from typing import ItemsView
+import requests
+# import json
+import urllib
+import base64
+import spotipy
+import spotipy.util as util
+
+app = Flask(__name__)
+redirect_uri = "http://127.0.0.1:8111/data-processing"
+client_id = "67bdc4b1d4d74f5d88cdab031fee6a41"
+client_secret = "1a88af0b600d4ce3bf81c5191ae3aac0"
+scopes = "playlist-read-private,user-read-private,user-read-email,user-library-read"
 
 """
 Columbia's COMS W4111.001 Introduction to Databases
@@ -184,6 +198,56 @@ def logout():
   session.clear()
   return redirect('/')
 
+@app.route('/get-data')
+def get_data():
+    return redirect("https://accounts.spotify.com/authorize?" + urllib.parse.urlencode({
+        "client_id": client_id, "response_type": "code", "redirect_uri": redirect_uri, "scope": scopes
+    }))
+
+@app.route('/data-processing')
+def data_processing():
+  
+  code = request.args.get("code")
+  result = requests.post(url="https://accounts.spotify.com/api/token", data={
+        "grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri,
+        "client_id": client_id, "client_secret": client_secret
+  })
+
+  result = result.json()
+  session["access_token"] = result["access_token"]
+  session["refresh_token"] = result["refresh_token"]
+
+
+  sp = spotipy.Spotify(auth=session["access_token"])
+  
+  #get multiple playlists
+
+  #get songs from playlists
+
+  #add to tracks 
+  return redirect('/')
+
+@app.route('/add-friend', methods=["GET", "POST"])
+def add_friend():
+    print("adding_friend")
+    if request.method == 'POST':
+      # refresh access token (only valid for about an hour)
+      result = requests.post(url="https://accounts.spotify.com/api/token", data={
+            "grant_type": "refresh_token", "refresh_token": session["refresh_token"], "client_id": client_id, "client_secret": client_secret
+      })
+      if result.status_code != 200:
+          #can't refresh, need to log in to spotify again
+          print("status code !200" + str(result.status_code))
+          redirect_uri = "http://127.0.0.1:8111/add-friend"
+          return redirect("/get-data")
+      print("status code 200" + str(result.status_code))
+    else:
+      #code to add friend to database, to make liked_by relationships 
+      print("request method post")
+    #result = result.json()
+    return redirect("/")
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
   if request.method == 'POST':
@@ -198,7 +262,10 @@ def login():
 
     session.clear()
     session['username'] = username
-    return redirect('/')
+    
+    #return redirect('/')
+    redirect_uri = "http://127.0.0.1:8111/data-processing"
+    return redirect('/get-data')
   return render_template("login.html")
 
 @app.route('/register', methods=['GET', 'POST'])

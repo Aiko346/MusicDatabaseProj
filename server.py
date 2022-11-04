@@ -215,6 +215,7 @@ def data_processing():
   })
 
   result = result.json()
+  print(result)
   session["access_token"] = result["access_token"]
   session["refresh_token"] = result["refresh_token"]
 

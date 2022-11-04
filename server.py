@@ -6,10 +6,11 @@ import urllib
 import base64
 import spotipy
 import spotipy.util as util
+from flask_debugtoolbar import DebugToolbarExtension
 
 app = Flask(__name__)
 #redirect_uri = "http://127.0.0.1:8111/data-processing"
-redirect_uri = "http://localhost:8111/data-processing"
+#redirect_uri = "http://localhost:8111/data-processing"
 client_id = "67bdc4b1d4d74f5d88cdab031fee6a41"
 client_secret = "1a88af0b600d4ce3bf81c5191ae3aac0"
 scopes = "playlist-read-private,user-read-private,user-read-email,user-library-read"
@@ -31,7 +32,11 @@ from flask import Flask, request, render_template, g, redirect, Response, sessio
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
+#app.debug = True
 app.secret_key = '648e2097fec28316b68b70c56305fdb6d2c07c82e4f00fce04e26ff0230eb3e4'
+# app.config['SECRET_KEY'] = '648e2097fec28316b68b70c56305fdb6d2c07c82e4f00fce04e26ff0230eb3e4'
+# toolbar = DebugToolbarExtension(app)
+
 #
 # The following is a dummy URI that does not connect to a valid database. You will need to modify it to connect to your Part 2 database in order to use the data.
 #
@@ -201,6 +206,7 @@ def logout():
 
 @app.route('/get-data')
 def get_data():
+    redirect_uri = "http://localhost:8111/data-processing"
     return redirect("https://accounts.spotify.com/authorize?" + urllib.parse.urlencode({
         "client_id": client_id, "response_type": "code", "redirect_uri": redirect_uri, "scope": scopes
     }))
@@ -209,24 +215,37 @@ def get_data():
 def data_processing():
   
   code = request.args.get("code")
-  result = requests.post(url="https://accounts.spotify.com/api/token", data={
-        "grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri,
-        "client_id": client_id, "client_secret": client_secret
-  })
+  redirect_uri="http://localhost:8111/data-processing"
+  try:
+    result = requests.post(url="https://accounts.spotify.com/api/token", data={
+          "grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri,
+          "client_id": client_id, "client_secret": client_secret
+    })
+    
+  except: 
+    print("error ocurred")
+    return redirect("/")
 
-  result = result.json()
-  session["access_token"] = result["access_token"]
-  session["refresh_token"] = result["refresh_token"]
+  #r = result.json()
+  print()
 
+  # session["access_token"] = r["access_token"]
+  # session["refresh_token"] = r["refresh_token"]
 
-  sp = spotipy.Spotify(auth=session["access_token"])
-  
+  # session["spotipy"] = spotipy.Spotify(auth=session["access_token"])
+  return redirect("/login")
+
+@app.route('/fill-home')
+def fill_home():
   #get multiple playlists
 
   #get songs from playlists
 
   #add to tracks 
-  return redirect('/')
+  # print(session["access_token"])
+  # print(session["username"])
+  # print(session["return_to"])
+  return redirect("/")
 
 @app.route('/add-friend', methods=["GET", "POST"])
 def add_friend():
@@ -237,14 +256,11 @@ def add_friend():
             "grant_type": "refresh_token", "refresh_token": session["refresh_token"], "client_id": client_id, "client_secret": client_secret
       })
       if result.status_code != 200:
-          #can't refresh, need to log in to spotify again
-          print("status code !200" + str(result.status_code))
-          redirect_uri = "http://localhost:8111/add-friend"
           return redirect("/get-data")
-      print("status code 200" + str(result.status_code))
     else:
       #code to add friend to database, to make liked_by relationships 
       print("request method post")
+      
     #result = result.json()
     return redirect("/")
 
@@ -261,12 +277,16 @@ def login():
      
     #if it succeeds:
 
-    session.clear()
+    #session.clear()
     session['username'] = username
     
     #return redirect('/')
-    redirect_uri = "http://localhost:8111/data-processing"
-    return redirect('/get-data')
+    # redirect_uri = "http://localhost:8111/data-processing"
+   
+   
+    
+    #get_data("http://localhost:8111/data-processing")
+    return redirect('/fill-home')
   return render_template("login.html")
 
 @app.route('/register', methods=['GET', 'POST'])

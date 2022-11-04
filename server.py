@@ -16,7 +16,7 @@ from flask import Flask, request, render_template, g, redirect, Response, sessio
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
-app.secret_key = '1234'
+app.secret_key = '648e2097fec28316b68b70c56305fdb6d2c07c82e4f00fce04e26ff0230eb3e4'
 #
 # The following is a dummy URI that does not connect to a valid database. You will need to modify it to connect to your Part 2 database in order to use the data.
 #
@@ -82,6 +82,7 @@ def teardown_request(exception):
     pass
 
 
+
 #
 # @app.route is a decorator around index() that means:
 #   run index() whenever the user tries to access the "/" path using a GET request
@@ -107,9 +108,12 @@ def index():
   See its API: https://flask.palletsprojects.com/en/2.0.x/api/?highlight=incoming%20request%20data
 
   """
-
+  if 'username' in session:
+    print(session['username'])
+  else:
+    print('no username')
   # DEBUG: this is debugging code to see what request looks like
- # print(request.args)
+  # print(request.args)
 
 
   #
@@ -164,10 +168,9 @@ def index():
 # Notice that the function name is another() rather than index()
 # The functions for each app.route need to have different names
 #
-@app.route('/another')
-def another():
-  return render_template("another.html")
-
+# @app.route('/another')
+# def another():
+#   return render_template("another.html")
 
 # Example of adding new data to the database
 @app.route('/add', methods=['POST'])
@@ -176,11 +179,42 @@ def add():
   g.conn.execute('INSERT INTO test(name) VALUES (%s)', name)
   return redirect('/')
 
+@app.route('/logout')
+def logout():
+  session.clear()
+  return redirect('/')
 
-@app.route('/login')
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    abort(401)
-    this_is_never_executed()
+  if request.method == 'POST':
+    username = request.form['username']
+    password = request.form['password'] 
+    
+    #make sql call to check if this username/password combo is in the database:
+
+    #if it fails:
+     
+    #if it succeeds:
+
+    session.clear()
+    session['username'] = username
+    return redirect('/')
+  return render_template("login.html")
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+  if request.method == 'POST':
+    username = request.form['username']
+    password = request.form['password'] 
+   
+    #make sql call to add this username/password combo is in the database:
+
+    #if it fails:
+     
+    #if it succeeds:
+    return redirect('/')
+  return render_template("register.html")
+
 
 @app.route('/filter', methods=['POST'])
 def filter():
@@ -189,6 +223,9 @@ def filter():
 
   
   return redirect('/')
+
+
+
 
 @app.route('/new-playlist', methods=['POST'])
 def new_playlist():

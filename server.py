@@ -216,23 +216,20 @@ def data_processing():
   
   code = request.args.get("code")
   redirect_uri="http://localhost:8111/data-processing"
-  try:
-    result = requests.post(url="https://accounts.spotify.com/api/token", data={
+  
+  result = requests.post(url="https://accounts.spotify.com/api/token", data={
           "grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri,
           "client_id": client_id, "client_secret": client_secret
-    })
-    
-  except: 
-    print("error ocurred")
-    return redirect("/")
+  })
 
   #r = result.json()
   print()
+  r = result.json()
 
-  # session["access_token"] = r["access_token"]
-  # session["refresh_token"] = r["refresh_token"]
+  session["access_token"] = r["access_token"]
+  session["refresh_token"] = r["refresh_token"]
 
-  # session["spotipy"] = spotipy.Spotify(auth=session["access_token"])
+  #session["spotipy"] = spotipy.Spotify(auth=session["access_token"])
   return redirect("/login")
 
 @app.route('/fill-home')

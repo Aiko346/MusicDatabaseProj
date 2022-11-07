@@ -116,7 +116,7 @@ def teardown_request(exception):
 # see for routing: https://flask.palletsprojects.com/en/2.0.x/quickstart/?highlight=routing
 # see for decorators: http://simeonfranklin.com/blog/2012/jul/1/python-decorators-in-12-steps/
 #
-@app.route('/')
+@app.route('/', methods=["GET", "POST"])
 def index():
   """
   request is a special object that Flask provides to access web request information:
@@ -138,6 +138,11 @@ def index():
   #
   # example of a database query
   #
+  tracks = []
+  if request.method == 'POST':
+    tracks = filter()
+
+
   playlist_options = []
   liked_by_options = []
   album_options = []
@@ -244,7 +249,7 @@ def index():
   # testlist = ["a", "b", "c"]
   # album_options = [{"id": "a", "name": "aname"}, {"id": "b", "name": "bname"}]
 
-  context = dict(liked_by_options=liked_by_options,mood_options = mood_options, album_options=album_options, playlist_options=playlist_options, artist_options=artist_options)
+  context = dict(tracks=tracks, liked_by_options=liked_by_options,mood_options = mood_options, album_options=album_options, playlist_options=playlist_options, artist_options=artist_options)
 
 
   #
@@ -399,11 +404,14 @@ def register():
 
 @app.route('/filter', methods=['POST'])
 def filter():
-  filter_option = request.form['filter-option']
+  #filter_option = request.form['filter-option']
+  for option in request.form:
+    print(option)
+  tracks = []
   #g.conn.execute('INSERT INTO test(name) VALUES (%s)', name)
 
   
-  return redirect('/')
+  return tracks
 
 
 

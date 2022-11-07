@@ -48,8 +48,8 @@ app.secret_key = '648e2097fec28316b68b70c56305fdb6d2c07c82e4f00fce04e26ff0230eb3
 #
 #     DATABASEURI = "postgresql://gravano:foobar@34.75.94.195/proj1part2"
 #
-DATABASEURI = "postgresql://alg2252:5368@34.75.94.195/proj1part2"
-
+# DATABASEURI = "postgresql://alg2252:5368@34.75.94.195/proj1part2"
+DATABASEURI = "postgresql://na2852:1353@34.75.94.195/proj1part2"
 
 #
 # This line creates a database engine that knows how to connect to the URI above.
@@ -128,10 +128,9 @@ def index():
   See its API: https://flask.palletsprojects.com/en/2.0.x/api/?highlight=incoming%20request%20data
 
   """
-  if 'username' in session:
-    print(session['username'])
-  else:
-    print('no username')
+  
+  # else:
+  #   print('no username')
   # DEBUG: this is debugging code to see what request looks like
   # print(request.args)
 
@@ -139,11 +138,82 @@ def index():
   #
   # example of a database query
   #
-  cursor = g.conn.execute("SELECT name FROM test")
-  names = []
-  for result in cursor:
-    names.append(result['name'])  # can also be accessed using result[0]
-  cursor.close()
+  playlist_options = []
+  liked_by_options = []
+  album_options = []
+  artist_options = []
+  mood_options = []
+  if 'username' in session:
+    print(session['username'])
+    cursor = g.conn.execute(
+    """SELECT DISTINCT E.id, E.name 
+    FROM existing_user_playlists E 
+    WHERE username=%s""", session['username'])
+    for result in cursor:
+      playlist_options.append({'name': result['name'], 'id': result['id']})  # can also be accessed using result[0]
+    #for getting tracks liked by a friend
+    # cursor = g.conn.execute(
+    # """
+    # SELECT DISTINCT T.name, T.id 
+    # FROM saved_to S, tracks T, existing_user_playlists E, liked_by L, friends   
+    # WHERE E.username=%s AND E.id = S.existing_playlist_id AND 
+    # T.id = S.track_id 
+    # INTERSECT
+    # SELECT DISTINCT T.name, T.id 
+    # FROM liked_by L, friends F, is_friends_with I  
+    # WHERE I.username=%s AND I.friend_id = F.id AND 
+    # T.id = S.track_id AND 
+    # """, session['username'], session['username'])
+    # for result in cursor:
+    #   playlist_options.append({'name': result['name'], 'id': result['id']})  # can also be accessed using result[0]
+   
+    cursor = g.conn.execute(
+    """
+    SELECT DISTINCT F.display_name AS name, F.id
+    FROM friends F, is_friends_with I  
+    WHERE I.username=%s AND F.id=I.friend_id 
+    """, session['username'])
+    for result in cursor:
+      liked_by_options.append({'name': result['name'], 'id': result['id']})  # can also be accessed using result[0]
+   
+    #all albums associated with tracks on one of the user's existing playlists 
+    cursor = g.conn.execute(
+    """
+    SELECT DISTINCT A.name, A.id
+    FROM Released_On R, Tracks T, Albums A, Saved_To S, existing_user_playlists E
+    WHERE A.id=R.album_id AND R.track_id=S.track_id AND S.existing_playlist_id=E.id
+    AND E.username=%s 
+    """, session['username'])
+    for result in cursor:
+      album_options.append({'name': result['name'], 'id': result['id']})  # can also be accessed using result[0]
+
+    #all artists associated with tracks on one of the user's existing playlists 
+    cursor = g.conn.execute(
+    """
+    SELECT DISTINCT A.name, A.id
+    FROM Is_On I, Tracks T, Artists A, Saved_To S, existing_user_playlists E
+    WHERE A.id=I.artist_id AND I.track_id=S.track_id AND S.existing_playlist_id=E.id
+    AND E.username=%s  
+    """, session['username'])
+    for result in cursor:
+      artist_options.append({'name': result['name'], 'id': result['id']})  # can also be accessed using result[0]
+
+    #all moods from this user
+    cursor = g.conn.execute(
+    """
+    SELECT DISTINCT M.mood as name
+    FROM assigned_Mood_To M
+    WHERE M.username=%s 
+    UNION
+    SELECT DISTINCT M.mood as name
+    FROM assigned_Mood_To2 M
+    WHERE M.username=%s
+    """, session['username'], session['username'])
+    for result in cursor:
+      mood_options.append({'name': result['name']})  # can also be accessed using result[0]
+
+
+    cursor.close()
 
   #
   # Flask uses Jinja templates, which is an extension to HTML where you can
@@ -171,9 +241,10 @@ def index():
   #     <div>{{n}}</div>
   #     {% endfor %}
   #
-  testlist = ["a", "b", "c"]
-  album_options = [{"id": "a", "name": "aname"}, {"id": "b", "name": "bname"}]
-  context = dict(data = names, testlist=testlist, album_options=album_options)
+  # testlist = ["a", "b", "c"]
+  # album_options = [{"id": "a", "name": "aname"}, {"id": "b", "name": "bname"}]
+
+  context = dict(liked_by_options=liked_by_options,mood_options = mood_options, album_options=album_options, playlist_options=playlist_options, artist_options=artist_options)
 
 
   #
@@ -237,6 +308,7 @@ def data_processing():
 
 @app.route('/fill-home')
 def fill_home():
+  #put data from spotify into SQL
   #get multiple playlists
 
   #get songs from playlists

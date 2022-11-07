@@ -9,13 +9,13 @@
 
 <body>
   <h1>Welcome to Playlist Filter!</h1>
-  <div>{{data}}</div>
+  <!-- <div>{{data}}</div>
   <div>{{testlist}}</div>
   <div>
     {% for n in data %}
     <div>{{n}}</div>
     {% endfor %}
-  </div>
+  </div> -->
 
   
 
@@ -81,8 +81,8 @@
     </fieldset>
     <fieldset id="mood-options">
       {% for n in mood_options %}
-      <input type="checkbox" id="{ {n["id"] }}" name="{ {n["id"] }}" value="{ {n["id"] }}">
-      <label for="{ {n["id"] }}">{{ n["name"] }}</label><br>
+      <input type="checkbox" id="{ { n["name"] }}" name="{ { n["name"] }}" value="{ { n["name"] }}">
+      <label for="{ { n["name"] }}">{{ n["name"] }}</label><br>
       {% endfor %}
     </fieldset>
   </form>
@@ -96,7 +96,7 @@
     <input type="submit" value="Make New Playlist">
   </form>
 
-  <p>Pick a New Playlist to add current songs to:</p>
+  <p>Pick an existing New Playlist to add current songs to:</p>
   <!-- In the server.py file we can take the playlist, read the data variable for the songs,
   and add them in the sql 
   -->

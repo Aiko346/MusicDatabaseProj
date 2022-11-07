@@ -6,10 +6,11 @@ import urllib
 import base64
 import spotipy
 import spotipy.util as util
+from flask_debugtoolbar import DebugToolbarExtension
 
 app = Flask(__name__)
 #redirect_uri = "http://127.0.0.1:8111/data-processing"
-redirect_uri = "http://localhost:8111/data-processing"
+#redirect_uri = "http://localhost:8111/data-processing"
 client_id = "67bdc4b1d4d74f5d88cdab031fee6a41"
 client_secret = "1a88af0b600d4ce3bf81c5191ae3aac0"
 scopes = "playlist-read-private,user-read-private,user-read-email,user-library-read"
@@ -31,7 +32,11 @@ from flask import Flask, request, render_template, g, redirect, Response, sessio
 
 tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
+app.debug = True
 app.secret_key = '648e2097fec28316b68b70c56305fdb6d2c07c82e4f00fce04e26ff0230eb3e4'
+# app.config['SECRET_KEY'] = '648e2097fec28316b68b70c56305fdb6d2c07c82e4f00fce04e26ff0230eb3e4'
+# toolbar = DebugToolbarExtension(app)
+
 #
 # The following is a dummy URI that does not connect to a valid database. You will need to modify it to connect to your Part 2 database in order to use the data.
 #
@@ -149,7 +154,7 @@ def index():
   # You can see an example template in templates/index.html
   #
   # context are the variables that are passed to the template.
-  # for example, "data" key in the context variable defined below will be
+  # for example, "data" key in the context variable defined belosw will be
   # accessible as a variable in index.html:
   #
   #     # will print: [u'grace hopper', u'alan turing', u'ada lovelace']
@@ -166,7 +171,9 @@ def index():
   #     <div>{{n}}</div>
   #     {% endfor %}
   #
-  context = dict(data = names)
+  testlist = ["a", "b", "c"]
+  album_options = [{"id": "a", "name": "aname"}, {"id": "b", "name": "bname"}]
+  context = dict(data = names, testlist=testlist, album_options=album_options)
 
 
   #
@@ -201,6 +208,7 @@ def logout():
 
 @app.route('/get-data')
 def get_data():
+    redirect_uri = "http://localhost:8111/data-processing"
     return redirect("https://accounts.spotify.com/authorize?" + urllib.parse.urlencode({
         "client_id": client_id, "response_type": "code", "redirect_uri": redirect_uri, "scope": scopes
     }))
@@ -209,25 +217,35 @@ def get_data():
 def data_processing():
   
   code = request.args.get("code")
+  redirect_uri="http://localhost:8111/data-processing"
+  
   result = requests.post(url="https://accounts.spotify.com/api/token", data={
-        "grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri,
-        "client_id": client_id, "client_secret": client_secret
+          "grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri,
+          "client_id": client_id, "client_secret": client_secret
   })
 
-  result = result.json()
-  print(result)
-  session["access_token"] = result["access_token"]
-  session["refresh_token"] = result["refresh_token"]
 
+  #r = result.json()
+  print()
+  r = result.json()
 
-  sp = spotipy.Spotify(auth=session["access_token"])
+  session["access_token"] = r["access_token"]
+  session["refresh_token"] = r["refresh_token"]
+
   
+  return redirect("/login")
+
+@app.route('/fill-home')
+def fill_home():
   #get multiple playlists
 
   #get songs from playlists
 
   #add to tracks 
-  return redirect('/')
+  # print(session["access_token"])
+  # print(session["username"])
+  # print(session["return_to"])
+  return redirect("/")
 
 @app.route('/add-friend', methods=["GET", "POST"])
 def add_friend():
@@ -238,16 +256,34 @@ def add_friend():
             "grant_type": "refresh_token", "refresh_token": session["refresh_token"], "client_id": client_id, "client_secret": client_secret
       })
       if result.status_code != 200:
-          #can't refresh, need to log in to spotify again
-          print("status code !200" + str(result.status_code))
-          redirect_uri = "http://localhost:8111/add-friend"
-          return redirect("/get-data")
-      print("status code 200" + str(result.status_code))
-    else:
-      #code to add friend to database, to make liked_by relationships 
-      print("request method post")
-    #result = result.json()
-    return redirect("/")
+          return redirect("/get-data") #log in again to both spotify and this app
+          #need to do both because redirecting to spotify clears cache, logging you out of this as well
+      sp = spotipy.Spotify(auth=session["access_token"])
+      user_info = sp.user(request.form["friend-id"])
+      display_name = user_info["display_name"] 
+      user_playlist_info = sp.user_playlists(request.form["friend-id"], limit = 2) #5 max
+      print(user_playlist_info)
+      user_playlist_ids = []
+      for item in user_playlist_info["items"]:
+        user_playlist_ids.append(item["uri"])
+      #add display_name to sql
+      for uri in user_playlist_ids:
+        tracks = sp.user_playlist_tracks(request.form["friend-id"], uri[17:])
+        print(tracks)
+        #limit at 100 per playlist due to speed
+        #check if tracks in Tracks for user already, if so create Liked_By relationship
+      print()
+      
+    #    # c = sp.current_user_playlists(limit = 10)
+    # # for item in c["items"]:
+    # #     print(item['description'])
+    # #     print(item["name"])
+    # #     print(item[])
+    # playlist_data = sp.user_playlist(user="zsp0yz1vi3brxtpz39a8zefqk",
+    #                                  playlist_id="5RuV6Qo9qJMrJ49NwTIYRW", fields="tracks,id,next,name,description")
+      
+   
+    return redirect("/fill-home")
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -262,12 +298,16 @@ def login():
      
     #if it succeeds:
 
-    session.clear()
+    #session.clear()
     session['username'] = username
     
     #return redirect('/')
-    redirect_uri = "http://localhost:8111/data-processing"
-    return redirect('/get-data')
+    # redirect_uri = "http://localhost:8111/data-processing"
+   
+   
+    
+    #get_data("http://localhost:8111/data-processing")
+    return redirect('/fill-home')
   return render_template("login.html")
 
 @app.route('/register', methods=['GET', 'POST'])

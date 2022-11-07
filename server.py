@@ -154,7 +154,7 @@ def index():
   # You can see an example template in templates/index.html
   #
   # context are the variables that are passed to the template.
-  # for example, "data" key in the context variable defined below will be
+  # for example, "data" key in the context variable defined belosw will be
   # accessible as a variable in index.html:
   #
   #     # will print: [u'grace hopper', u'alan turing', u'ada lovelace']
@@ -172,7 +172,8 @@ def index():
   #     {% endfor %}
   #
   testlist = ["a", "b", "c"]
-  context = dict(data = names, testlist=testlist)
+  album_options = [{"id": "a", "name": "aname"}, {"id": "b", "name": "bname"}]
+  context = dict(data = names, testlist=testlist, album_options=album_options)
 
 
   #
@@ -254,7 +255,8 @@ def add_friend():
             "grant_type": "refresh_token", "refresh_token": session["refresh_token"], "client_id": client_id, "client_secret": client_secret
       })
       if result.status_code != 200:
-          return redirect("/get-data")
+          return redirect("/get-data") #log in again to both spotify and this app
+          #need to do both because redirecting to spotify clears cache, logging you out of this as well
       sp = spotipy.Spotify(auth=session["access_token"])
       user_info = sp.user(request.form["friend-id"])
       display_name = user_info["display_name"] 

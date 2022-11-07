@@ -43,10 +43,10 @@
   <form method="POST" action="/filter" id="filtering-form">
     <fieldset>
       <legend>Filtering Options</legend>
-      <input type="radio" id="liked-by" name="filter_option" value="liked-by">
-      <label for="liked-by">Liked By</label><br>
       <input type="radio" id="album" name="filter_option" value="album">
       <label for="album">Album</label><br>
+      <input type="radio" id="liked-by" name="filter_option" value="liked-by">
+      <label for="liked-by">Liked By</label><br>
       <input type="radio" id="playlist" name="filter_option" value="playlist">
       <label for="playlist">Playlist</label><br>
       <input type="radio" id="artist" name="filter_option" value="artist">
@@ -56,10 +56,34 @@
       <input type="submit" value="Submit">
     </fieldset>
     <fieldset id="album-options">
-      <input type="radio" id="liked-by-2" name="filter_option_2" value="liked-by">
-      <label for="liked-by-2">Liked By</label><br>
-      <input type="radio" id="album-2" name="filter_option_2" value="album">
-      <label for="album-2">Album</label><br>
+      {% for n in album_options %}
+      <input type="checkbox" id="{ {n["id"] }}" name="{ {n["id"] }}" value="{ {n["id"] }}">
+      <label for="{ {n["id"] }}">{{ n["name"] }}</label><br>
+      {% endfor %}
+    </fieldset>
+    <fieldset id="liked-by-options">
+      {% for n in liked_by_options %}
+      <input type="checkbox" id="{ {n["id"] }}" name="{ {n["id"] }}" value="{ {n["id"] }}">
+      <label for="{ {n["id"] }}">{{ n["name"] }}</label><br>
+      {% endfor %}
+    </fieldset>
+    <fieldset id="playlist-options">
+      {% for n in playlist_options %}
+      <input type="checkbox" id="{ {n["id"] }}" name="{ {n["id"] }}" value="{ {n["id"] }}">
+      <label for="{ {n["id"] }}">{{ n["name"] }}</label><br>
+      {% endfor %}
+    </fieldset>
+    <fieldset id="artist-options">
+      {% for n in artist_options %}
+      <input type="checkbox" id="{ {n["id"] }}" name="{ {n["id"] }}" value="{ {n["id"] }}">
+      <label for="{ {n["id"] }}">{{ n["name"] }}</label><br>
+      {% endfor %}
+    </fieldset>
+    <fieldset id="mood-options">
+      {% for n in mood_options %}
+      <input type="checkbox" id="{ {n["id"] }}" name="{ {n["id"] }}" value="{ {n["id"] }}">
+      <label for="{ {n["id"] }}">{{ n["name"] }}</label><br>
+      {% endfor %}
     </fieldset>
   </form>
 
@@ -72,20 +96,37 @@
     <input type="submit" value="Make New Playlist">
   </form>
 
+  <p>Pick a New Playlist to add current songs to:</p>
+  <!-- In the server.py file we can take the playlist, read the data variable for the songs,
+  and add them in the sql 
+  -->
+  {% for n in new_playlists %}
+  <input>{{n}}</div>
+  {% endfor %}
+  <p> Pick a playlist to add to your Spotify:</p>
+  <!-- current new_playlists here -> when one is added, create it and then remove it from new playlists-->
+
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
   <script src="jquery.js"></script>
   <script>
     $(document).ready(function () {
+      let options = ["album", "liked-by", "playlist", "artist", "mood"];
+      options.forEach(function (option) {
+        $("#"+option+"-options").hide();
+      });
       $("#filtering-form").click(function () {
-        console.log("testing");
-        if ($("#album").is(":checked")) {
-          $("#album-options").show();
+        options.forEach( function(option) {
+          if ($("#"+option).is(":checked")) {
+          $("#"+option+"-options").show();
           console.log("checked");
         } else {
-          $("#album-options").hide();
+          $("#"+option+"-options").hide();
           console.log("unchecked");
         }
+        });
+       
       });
+      
     });
   </script>
 

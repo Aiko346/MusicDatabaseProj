@@ -262,26 +262,20 @@ def logout():
 @app.route('/get-data')
 def get_data():
     redirect_uri = "http://localhost:8111/data-processing"
-    return redirect("https://accounts.spotify.com/authorize?" + urllib.parse.urlencode({
-        "client_id": client_id, "response_type": "code", "redirect_uri": redirect_uri, "scope": scopes
-    }))
+    auth = spotipy.oauth2.SpotifyOAuth(client_id = client_id, client_secret = client_secret, redirect_uri = redirect_uri, scope = scopes)
+    return redirect(auth.get_authorize_url())
 
 
 @app.route('/data-processing')
 def data_processing():
-
-  code = request.args.get("code")
   redirect_uri = "http://localhost:8111/data-processing"
-
-  result = requests.post(url="https://accounts.spotify.com/api/token", data={
-          "grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri,
-          "client_id": client_id, "client_secret": client_secret
-  })
-
-  r = result.json()
-
-  session["access_token"] = r["access_token"]
-  session["refresh_token"] = r["refresh_token"]
+  auth = spotipy.oauth2.SpotifyOAuth(cache_handler = spotipy.cache_handler.FlaskSessionCacheHandler(session), client_id = client_id, client_secret = client_secret, redirect_uri = redirect_uri, scope = scopes)
+  
+  code = request.args.get("code")
+  auth.get_access_token(code)
+  #print(auth.get_cached_token())
+  session["access_token"] = auth.get_cached_token()["access_token"]
+  session["refresh_token"] = auth.get_cached_token()["refresh_token"]
 
   return redirect("/login")
 
@@ -300,7 +294,7 @@ def fill_home():  # put data from spotify into SQL
   
   #TODO: add try except in case all else fails around this
   try:
-    playlist_info = sp.current_user_playlists(limit=3)  # 3 to keep time manageable
+    playlist_info = sp.current_user_playlists(limit=2)  # 2 to keep time manageable
   except Exception:
     return redirect("/get-data")
   
@@ -321,13 +315,11 @@ def fill_home():  # put data from spotify into SQL
       pass
     
     count = 0 #added to limit download time. In the future, could be made more efficient by combining inserts.
-    while playlist != None and count <= 40:    
-      
+    while playlist != None and count < 40:    
       for track_info in playlist["items"]:
           count = count + 1
           track = track_info["track"]
           try:
-            
             g.conn.execute(
               '''INSERT INTO Tracks (id, name, popularity, duration, release_date) VALUES 
                 (%s, %s, %s, %s, %s)''', 

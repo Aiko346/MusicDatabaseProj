@@ -1,7 +1,12 @@
+from flask import Flask, request, render_template, g, redirect, Response, session
+from sqlalchemy.pool import NullPool
+from sqlalchemy import *
+import os
 from flask import Flask, redirect, url_for, request
 from typing import ItemsView
 import requests
 # import json
+from spotipy.oauth2 import SpotifyOAuth
 import urllib
 import base64
 import spotipy
@@ -9,8 +14,6 @@ import spotipy.util as util
 from flask_debugtoolbar import DebugToolbarExtension
 
 app = Flask(__name__)
-#redirect_uri = "http://127.0.0.1:8111/data-processing"
-#redirect_uri = "http://localhost:8111/data-processing"
 client_id = "67bdc4b1d4d74f5d88cdab031fee6a41"
 client_secret = "1a88af0b600d4ce3bf81c5191ae3aac0"
 scopes = "playlist-read-private,user-read-private,user-read-email,user-library-read"
@@ -24,13 +27,10 @@ Go to http://localhost:8111 in your browser.
 A debugger such as "pdb" may be helpful for debugging.
 Read about it online.
 """
-import os
   # accessible as a variable in index.html:
-from sqlalchemy import *
-from sqlalchemy.pool import NullPool
-from flask import Flask, request, render_template, g, redirect, Response, session
 
-tmpl_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+tmpl_dir = os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
 app.debug = True
 app.secret_key = '648e2097fec28316b68b70c56305fdb6d2c07c82e4f00fce04e26ff0230eb3e4'
@@ -64,11 +64,12 @@ engine.execute("""CREATE TABLE IF NOT EXISTS test (
   id serial,
   name text
 );""")
-#engine.execute("""INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');""")
+# engine.execute("""INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');""")
 
 # track current filter params in session
 # format session.filter_yes={playlist: [], song: [], mood: [], artist:[], album[], liked_by[]}
 # format session.filter_no={playlist: [], song: [], mood: [], artist:[], album[], liked_by[]}
+
 
 @app.before_request
 def before_request():
@@ -86,9 +87,6 @@ def before_request():
     import traceback; traceback.print_exc()
     g.conn = None
 
-  
-  
-
 
 @app.teardown_request
 def teardown_request(exception):
@@ -100,7 +98,6 @@ def teardown_request(exception):
     g.conn.close()
   except Exception as e:
     pass
-
 
 
 #
@@ -128,12 +125,11 @@ def index():
   See its API: https://flask.palletsprojects.com/en/2.0.x/api/?highlight=incoming%20request%20data
 
   """
-  
+
   # else:
   #   print('no username')
   # DEBUG: this is debugging code to see what request looks like
   # print(request.args)
-
 
   #
   # example of a database query
@@ -150,57 +146,61 @@ def index():
   if 'username' in session:
     print(session['username'])
     cursor = g.conn.execute(
-    """SELECT DISTINCT E.id, E.name 
-    FROM existing_user_playlists E 
+    """SELECT DISTINCT E.id, E.name
+    FROM existing_user_playlists E
     WHERE username=%s""", session['username'])
     for result in cursor:
-      playlist_options.append({'name': result['name'], 'id': result['id']})  # can also be accessed using result[0]
-   
+      # can also be accessed using result[0]
+      playlist_options.append({'name': result['name'], 'id': result['id']})
+
     cursor = g.conn.execute(
     """
     SELECT DISTINCT F.display_name AS name, F.id
-    FROM friends F, is_friends_with I  
-    WHERE I.username=%s AND F.id=I.friend_id 
+    FROM friends F, is_friends_with I
+    WHERE I.username=%s AND F.id=I.friend_id
     """, session['username'])
     for result in cursor:
-      liked_by_options.append({'name': result['name'], 'id': result['id']})  # can also be accessed using result[0]
-   
-    #all albums associated with tracks on one of the user's existing playlists 
+      # can also be accessed using result[0]
+      liked_by_options.append({'name': result['name'], 'id': result['id']})
+
+    # all albums associated with tracks on one of the user's existing playlists
     cursor = g.conn.execute(
     """
     SELECT DISTINCT A.name, A.id
     FROM Released_On R, Tracks T, Albums A, Saved_To S, existing_user_playlists E
     WHERE A.id=R.album_id AND R.track_id=S.track_id AND S.existing_playlist_id=E.id
-    AND E.username=%s 
+    AND E.username=%s
     """, session['username'])
     for result in cursor:
-      album_options.append({'name': result['name'], 'id': result['id']})  # can also be accessed using result[0]
+      # can also be accessed using result[0]
+      album_options.append({'name': result['name'], 'id': result['id']})
 
-    #all artists associated with tracks on one of the user's existing playlists 
+    # all artists associated with tracks on one of the user's existing playlists
     cursor = g.conn.execute(
     """
     SELECT DISTINCT A.name, A.id
     FROM Is_On I, Tracks T, Artists A, Saved_To S, existing_user_playlists E
     WHERE A.id=I.artist_id AND I.track_id=S.track_id AND S.existing_playlist_id=E.id
-    AND E.username=%s  
+    AND E.username=%s
     """, session['username'])
     for result in cursor:
-      artist_options.append({'name': result['name'], 'id': result['id']})  # can also be accessed using result[0]
+      # can also be accessed using result[0]
+      artist_options.append({'name': result['name'], 'id': result['id']})
 
-    #all moods from this user
+    # all moods from this user
     cursor = g.conn.execute(
     """
     SELECT DISTINCT M.mood as name
     FROM assigned_Mood_To M
-    WHERE M.username=%s 
+    WHERE M.username=%s
     UNION
     SELECT DISTINCT M.mood as name
     FROM assigned_Mood_To2 M
     WHERE M.username=%s
     """, session['username'], session['username'])
     for result in cursor:
-      mood_options.append({'name': result['name']})  # can also be accessed using result[0]
-
+      # can also be accessed using result[0]
+      mood_options.append({'name': result['name']})
 
     cursor.close()
 
@@ -233,8 +233,8 @@ def index():
   # testlist = ["a", "b", "c"]
   # album_options = [{"id": "a", "name": "aname"}, {"id": "b", "name": "bname"}]
 
-  context = dict(tracks=tracks, liked_by_options=liked_by_options,mood_options = mood_options, album_options=album_options, playlist_options=playlist_options, artist_options=artist_options)
-
+  context = dict(tracks=tracks, liked_by_options=liked_by_options, mood_options=mood_options,
+                 album_options=album_options, playlist_options=playlist_options, artist_options=artist_options)
 
   #
   # render_template looks in the templates/ folder for files.
@@ -255,16 +255,20 @@ def index():
 #   return render_template("another.html")
 
 # Example of adding new data to the database
+
+
 @app.route('/add', methods=['POST'])
 def add():
   name = request.form['name']
   g.conn.execute('INSERT INTO test(name) VALUES (%s)', name)
   return redirect('/')
 
+
 @app.route('/logout')
 def logout():
   session.clear()
   return redirect('/')
+
 
 @app.route('/get-data')
 def get_data():
@@ -273,36 +277,141 @@ def get_data():
         "client_id": client_id, "response_type": "code", "redirect_uri": redirect_uri, "scope": scopes
     }))
 
+
 @app.route('/data-processing')
 def data_processing():
-  
+
   code = request.args.get("code")
-  redirect_uri="http://localhost:8111/data-processing"
-  
+  redirect_uri = "http://localhost:8111/data-processing"
+
   result = requests.post(url="https://accounts.spotify.com/api/token", data={
           "grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri,
           "client_id": client_id, "client_secret": client_secret
   })
 
-
-  #r = result.json()
+  # r = result.json()
   print()
   r = result.json()
 
   session["access_token"] = r["access_token"]
   session["refresh_token"] = r["refresh_token"]
 
-  
   return redirect("/login")
 
+
 @app.route('/fill-home')
-def fill_home():
-  #put data from spotify into SQL
-  #get multiple playlists
+def fill_home():  # put data from spotify into SQL
+  sp = spotipy.Spotify(auth=session["access_token"], oauth_manager=SpotifyOAuth(scope=scopes, client_id=client_id, client_secret=client_secret, redirect_uri="http://localhost:8111/data-processing"))
+  
+  #if token not valid anymore since login, refresh JANKY, FIX
+  # if not sp.oauth_manager.validate_token(session["access_token"]):
+  #   sp.oauth_manager.refresh_access_token(session["refresh_token"])
+  #   print("here")
+  # if not sp.oauth_manager.validate_token(session["access_token"]): BROKEN 
+  #   print("not valid?")
+  #   return redirect("/get-data") if fails
+    
+  #TODO: add try except in case all else fails around this
+  playlist_info = sp.current_user_playlists(limit=3)  # for testing
+  #print("in")
+  for item in playlist_info["items"]:
+    #print("in")
+    #print(item)
+    playlist_data = sp.user_playlist(user=item["owner"]["id"],
+                                     playlist_id=item["id"], fields="tracks,id,next,name")
+    
+    #print(playlist_data)
+    playlist = playlist_data["tracks"]
+    print('INSERT INTO Existing_User_Playlists (id, username, name, length) VALUES ' +
+        '("{id}", "{username}", "{name}", {length});'.format(
+            id=playlist_data["id"], name=playlist_data["name"], username="agerra", length=len(playlist["items"])
+        ))
+    while playlist != None:    
+      for track_info in playlist["items"]:
+          track = track_info["track"]
+          print('INSERT INTO Tracks (id, name, popularity, duration, release_date) VALUES ' +
+                '("{id}", "{name}", {popularity}, {duration}, "{release_date}");'.format(
+                    id=track["id"], name=track["name"], popularity=track["popularity"], duration=track["duration_ms"],
+                    release_date=track["album"]["release_date"]
+                ))
 
-  #get songs from playlists
+          print('INSERT INTO Saved_To (track_id, existing_playlist_id, date_added) VALUES ' +
+                '("{track_id}", "{existing_playlist_id}", "{date_added}");'.format(
+                    track_id=track["id"], existing_playlist_id=playlist_data["id"], date_added=track_info["added_at"][:10]))
 
-  #add to tracks 
+          #albums
+          if track["album"]["album_type"] == "album":
+              print('INSERT INTO Albums (id, name, release_date) VALUES ' +
+                    '("{id}", "{name}", "{release_date}");'.format(id=track["album"]["id"], name=track["album"]["name"], release_date=track["album"]["release_date"]))
+          
+
+          # artists of track
+          for artist in track["artists"]:
+              artist_data = sp.artist(artist["id"])
+
+              for genre in artist_data["genres"]:
+                  #genre
+                  print('INSERT INTO Genres (genre) VALUES ' +
+                  '("{genre}");'.format(genre=genre))
+                  #Artist Is_In Genre
+                  print('INSERT INTO Is_In (artist_id, genre) VALUES ' +
+                  '("{artist_id}", "{genre}");'.format(artist_id=artist["id"], genre=genre))
+
+              print('INSERT INTO Artists (id, name, popularity) VALUES ' +
+                    '("{id}", "{name}", {popularity});'.format(id=artist["id"],
+                                                                          name=artist["name"], popularity=artist_data["popularity"]))
+
+              collaboration = "FALSE"
+              if len(track["artists"]) > 1:
+                  collaboration = "TRUE"
+              print('INSERT INTO Is_On (artist_id, track_id, collaboration) VALUES ' +
+                    '("{artist_id}", "{track_id}", {collaboration});'.format(
+                        artist_id=artist["id"],
+                        track_id=track["id"], collaboration=collaboration))
+
+              if track["album"]["album_type"] == "album":
+                  album_by_artist = "FALSE"
+
+                  for album_artist in track["album"]["artists"]:
+                      if album_artist["id"] == artist["id"]:
+                          album_by_artist = "TRUE"
+
+                  print('INSERT INTO From (artist_id, track_id, album_id, album_by_artist) VALUES ' +
+                        '("{artist_id}", "{track_id}", "{album_id}", {album_by_artist});'.format(
+                            artist_id=artist["id"],
+                            track_id=track["id"], album_id=track["album"]["id"], album_by_artist=album_by_artist))
+    
+      if "next" in playlist:
+        playlist = sp.next(playlist)
+      else:
+        playlist = None
+       
+    
+        # print("yes")
+        # while playlist_data["next"]:
+        #     playlist = 
+        #     for track_info in playlist["items"]:
+        #         track = track_info["track"]
+        #         print(track)
+        #         # print(track["artists"][0]["name"] + " " + track["name"])
+        #         print()
+  # playlist_data = sp.user_playlist(user="zsp0yz1vi3brxtpz39a8zefqk", playlist_id="1aKB89kQyvWFVcexsgjDGN", fields="tracks,id,next,name")
+  # #print(playlist_data)
+  # flag = False
+  # playlist = playlist_data["tracks"]
+  # while playlist != None:
+  #   if "next" in playlist:
+  #         print(playlist["next"])
+  #         flag = False
+  #         playlist = sp.next(playlist)
+  #         print("false")
+  #   else:
+  #     playlist = None
+  #     flag = True #end loop if done with this playlist
+  #     print("true")
+  # get songs from playlists
+
+  # add to tracks
   # print(session["access_token"])
   # print(session["username"])
   # print(session["return_to"])
@@ -344,7 +453,7 @@ def add_friend():
     #                                  playlist_id="5RuV6Qo9qJMrJ49NwTIYRW", fields="tracks,id,next,name,description")
       
    
-    return redirect("/fill-home")
+    return redirect("/")
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -362,13 +471,7 @@ def login():
     #session.clear()
     session['username'] = username
     
-    #return redirect('/')
-    # redirect_uri = "http://localhost:8111/data-processing"
-   
-   
-    
-    #get_data("http://localhost:8111/data-processing")
-    return redirect('/fill-home')
+    return redirect('/')
   return render_template("login.html")
 
 @app.route('/register', methods=['GET', 'POST'])

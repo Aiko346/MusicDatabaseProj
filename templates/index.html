@@ -17,12 +17,13 @@
     {% endfor %}
   </div> -->
 
-  <p><a href="fill-home">Test spotify get data</a></p>
+  
 
   <p><a href="register">Register</a></p>
   
   {% if 'username' in session %}
   <p><a href="logout">Logout</a></p>
+  <p><a href="fill-home">Get data from Spotify.</a> Will only add data, not remove anything. Make a new account for a clean slate.</p>
 
   <div id="tracks">
   {% for n in tracks %}

@@ -313,19 +313,17 @@ def fill_home():  # put data from spotify into SQL
   
   #TODO: add try except in case all else fails around this
   try:
-    playlist_info = sp.current_user_playlists(limit=1, offset=3)  # for testing
+    playlist_info = sp.current_user_playlists(limit=3)  # 3 to keep time manageable
   except Exception:
     return redirect("/get-data")
   
-  #print("in")
   for item in playlist_info["items"]:
     
     playlist_data = sp.user_playlist(user=item["owner"]["id"],
                                      playlist_id=item["id"], fields="tracks,id,next,name,total")
     
-    #print(playlist_data)
     playlist = playlist_data["tracks"]
-    #print(playlist)
+   
     print(playlist_data["name"])
     try:
       g.conn.execute(
@@ -333,40 +331,32 @@ def fill_home():  # put data from spotify into SQL
           (%s, %s, %s, %s)''', 
           playlist_data["id"], session["username"], playlist_data["name"], playlist['total'])
     except Exception: 
-      print("Existing_User_Playlists problem")
-    # # print('INSERT INTO Existing_User_Playlists (id, username, name, length) VALUES ' +
-    #     '("{id}", "{username}", "{name}", {length});'.format(
-    #         id=playlist_data["id"], name=playlist_data["name"], username="agerra", length=len(playlist["items"])
-    #     ))
-    while playlist != None:    
+      #print("Existing_User_Playlists problem")
+      pass
+    
+    count = 0 #added to limit download time. In the future, could be made more efficient by combining inserts.
+    while playlist != None and count <= 40:    
       print("playlist")
       for track_info in playlist["items"]:
+          count = count + 1
           track = track_info["track"]
           try:
+            
             g.conn.execute(
               '''INSERT INTO Tracks (id, name, popularity, duration, release_date) VALUES 
                 (%s, %s, %s, %s, %s)''', 
                     track["id"], track["name"], track["popularity"], track["duration_ms"], track["album"]["release_date"])
           except Exception: 
-            print("Tracks problem")
-          # print('INSERT INTO Tracks (id, name, popularity, duration, release_date) VALUES ' +
-          #       '("{id}", "{name}", {popularity}, {duration}, "{release_date}");'.format(
-          #           id=track["id"], name=track["name"], popularity=track["popularity"], duration=track["duration_ms"],
-          #           release_date=track["album"]["release_date"]
-          #       ))
-
+            #print("Tracks problem")
+            pass
           try:
             g.conn.execute(
               '''INSERT INTO Saved_To (track_id, existing_playlist_id, date_added) VALUES 
                 (%s, %s, %s)''', 
                     track["id"], playlist_data["id"], track_info["added_at"][:10])
           except Exception: 
-            print("Saved_To problem")
-
-          # print('INSERT INTO Saved_To (track_id, existing_playlist_id, date_added) VALUES ' +
-          #       '("{track_id}", "{existing_playlist_id}", "{date_added}");'.format(
-          #           track_id=track["id"], existing_playlist_id=playlist_data["id"], date_added=track_info["added_at"][:10]))
-
+            #print("Saved_To problem")
+            pass
           #albums
           if track["album"]["album_type"] == "album":
                try:
@@ -375,11 +365,8 @@ def fill_home():  # put data from spotify into SQL
                       (%s, %s, %s)''', 
                   track["album"]["id"], track["album"]["name"], track["album"]["release_date"])
                except Exception: 
-                print("Albums problem")
-             
-                # print('INSERT INTO Albums (id, name, release_date) VALUES ' +
-                #     '("{id}", "{name}", "{release_date}");'.format(id=track["album"]["id"], name=track["album"]["name"], release_date=track["album"]["release_date"]))
-          
+                  #print("Albums problem")
+                  pass
           # artists of track
           for artist in track["artists"]:
               artist_data = sp.artist(artist["id"])
@@ -390,31 +377,23 @@ def fill_home():  # put data from spotify into SQL
                       '''INSERT INTO Genres (genre) VALUES   
                         (%s)''', genre)
                   except Exception: 
-                    print("Genres problem")
-                  # print('INSERT INTO Genres (genre) VALUES ' +
-                  # '("{genre}");'.format(genre=genre))
-
-                  #Artist Is_In Genre
+                    #print("Genres problem")
+                    pass
                   try:
                    g.conn.execute(
                       '''INSERT INTO Is_In (artist_id, genre) VALUES    
                         (%s, %s)''', artist["id"], genre)
                   except Exception: 
-                    print("Is_In problem")
-                  # print('INSERT INTO Is_In (artist_id, genre) VALUES ' +
-                  # '("{artist_id}", "{genre}");'.format(artist_id=artist["id"], genre=genre))
-              
+                    #print("Is_In problem")
+                    pass
               #Artists
               try:
                    g.conn.execute(
                       '''INSERT INTO Artists (id, name, popularity) VALUES     
                         (%s, %s, %s)''', artist["id"], artist["name"], artist_data["popularity"])
               except Exception: 
-                print("Artists problem")
-              # print('INSERT INTO Artists (id, name, popularity) VALUES ' +
-              #       '("{id}", "{name}", {popularity});'.format(id=artist["id"],
-              #                                                             name=artist["name"], popularity=artist_data["popularity"]))
-
+                #print("Artists problem")
+                pass
               collaboration = "FALSE"
               if len(track["artists"]) > 1:
                   collaboration = "TRUE"
@@ -423,12 +402,8 @@ def fill_home():  # put data from spotify into SQL
                   '''INSERT INTO Is_On (artist_id, track_id, collaboration) VALUES  
                     (%s, %s, %s)''', artist["id"], track["id"], collaboration)
               except Exception: 
-                print("Is_On problem")
-              # print('INSERT INTO Is_On (artist_id, track_id, collaboration) VALUES ' +
-              #       '("{artist_id}", "{track_id}", {collaboration});'.format(
-              #           artist_id=artist["id"],
-              #           track_id=track["id"], collaboration=collaboration))
-
+                #print("Is_On problem")
+                pass
               if track["album"]["album_type"] == "album":
                   album_by_artist = "FALSE"
 
@@ -441,13 +416,10 @@ def fill_home():  # put data from spotify into SQL
                       '''INSERT INTO From (artist_id, track_id, album_id, album_by_artist) VALUES  
                         (%s, %s, %s, %s)''', artist["id"], track["id"], track["album"]["id"], album_by_artist)
                   except Exception: 
-                    print("From problem")
-
-                  # print('INSERT INTO From (artist_id, track_id, album_id, album_by_artist) VALUES ' +
-                  #       '("{artist_id}", "{track_id}", "{album_id}", {album_by_artist});'.format(
-                  #           artist_id=artist["id"],
-                  #           track_id=track["id"], album_id=track["album"]["id"], album_by_artist=album_by_artist))
-    
+                    #print("From problem")
+                    pass
+          if count >= 40:
+            break    
       if "next" in playlist:
         playlist = sp.next(playlist)
       else:

@@ -388,15 +388,11 @@ def register():
 
 
 def filter():
-  #filter_option = request.form['filter-option']
- 
-  
   requested = {"B": [], "L": [], "P": [], "R": [], "M":[]}
   results = []
   for option in request.form.keys():
     if option[0] in requested.keys():
       requested[option[0]].append(request.form[option])
-  
   
   #albums
   album_track_ids = set()
@@ -463,7 +459,6 @@ def filter():
     results.append( artist_track_ids)
  
   #moods
-  #artists
   mood_track_ids = set()
   for mood in requested["M"]:
       cursor = g.conn.execute(
@@ -479,10 +474,9 @@ def filter():
       update_set(mood_track_ids, cursor)
   if len(requested["M"]) > 0:
     results.append(mood_track_ids)
-  #find intersection of filters that had any selections
   
+  #find intersection of filters that had any selections
   track_ids = set()
-
   #if nothing selected, show all tracks on user's stored playlists 
   if len(results) == 0:
     cursor = g.conn.execute(
@@ -497,9 +491,6 @@ def filter():
   for r in results:
     track_ids = track_ids.intersection(r)
   
-  
-  
-  #...
   #do sql query on each track id to get track name and artists 
   tracks = {}
   for id in track_ids:
@@ -510,16 +501,7 @@ def filter():
     WHERE T.id=%s AND I.artist_id = A.id AND T.id=I.track_id 
     """, id)
     update_tracks(cursor, tracks)
-               #tracks.append({'name': result['name'], 'id': result['id'], 'artist': result['artist']})  # can also be accessed using result[0]
-  
-      #liked_by filter
-     
-        #tracks.append({'name': result['name'], 'id': result['id'], 'artist': result['artist']})  # can also be accessed using result[0]
-   
-  #g.conn.execute('INSERT INTO test(name) VALUES (%s)', name)
   return tracks
-
-# 
 
 def update_set(set, cursor):
   for result in cursor:

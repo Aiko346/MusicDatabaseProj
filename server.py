@@ -313,10 +313,11 @@ def fill_home():  # put data from spotify into SQL
     except Exception: 
       #print("Existing_User_Playlists problem")
       pass
-    
+    #print(playlist_data["name"])
     count = 0 #added to limit download time. In the future, could be made more efficient by combining inserts.
     while playlist != None and count < 30:    
       for track_info in playlist["items"]:
+          #print(count)
           count = count + 1
           track = track_info["track"]
           try:
@@ -324,79 +325,59 @@ def fill_home():  # put data from spotify into SQL
               '''INSERT INTO Tracks (id, name, popularity, duration, release_date) VALUES 
                 (%s, %s, %s, %s, %s)''', 
                     track["id"], track["name"], track["popularity"], track["duration_ms"], track["album"]["release_date"])
-          except Exception: 
-            #print("Tracks problem")
-            pass
-          try:
+          
             g.conn.execute(
               '''INSERT INTO Saved_To (track_id, existing_playlist_id, date_added) VALUES 
                 (%s, %s, %s)''', 
                     track["id"], playlist_data["id"], track_info["added_at"][:10])
-          except Exception: 
-            #print("Saved_To problem")
-            pass
-          #albums
-          if track["album"]["album_type"] == "album":
-               try:
+          
+            #albums
+            if track["album"]["album_type"] == "album":
                   g.conn.execute(
                     '''INSERT INTO Albums (id, name, release_date) VALUES  
                       (%s, %s, %s)''', 
                   track["album"]["id"], track["album"]["name"], track["album"]["release_date"])
-               except Exception: 
-                  #print("Albums problem")
-                  pass
-          # artists of track
-          for artist in track["artists"]:
-              artist_data = sp.artist(artist["id"])
-              for genre in artist_data["genres"]:
-                  #Genres
-                  try:
-                   g.conn.execute(
-                      '''INSERT INTO Genres (genre) VALUES   
-                        (%s)''', genre)
-                  except Exception: 
-                    #print("Genres problem")
-                    pass
-                  try:
-                   g.conn.execute(
-                      '''INSERT INTO Is_In (artist_id, genre) VALUES    
-                        (%s, %s)''', artist["id"], genre)
-                  except Exception: 
-                    #print("Is_In problem")
-                    pass
-              #Artists
-              try:
-                   g.conn.execute(
-                      '''INSERT INTO Artists (id, name, popularity) VALUES     
-                        (%s, %s, %s)''', artist["id"], artist["name"], artist_data["popularity"])
-              except Exception: 
-                #print("Artists problem")
-                pass
-              collaboration = "FALSE"
-              if len(track["artists"]) > 1:
-                  collaboration = "TRUE"
-              try:
+                
+            # artists of track
+            for artist in track["artists"]:
+                artist_data = sp.artist(artist["id"])
+                for genre in artist_data["genres"]:
+                    #Genres
+                      g.conn.execute(
+                        '''INSERT INTO Genres (genre) VALUES   
+                          (%s)''', genre)
+                  
+                      g.conn.execute(
+                        '''INSERT INTO Is_In (artist_id, genre) VALUES    
+                          (%s, %s)''', artist["id"], genre)
+                   
+                #Artists
+                g.conn.execute(
+                  '''INSERT INTO Artists (id, name, popularity) VALUES     
+                    (%s, %s, %s)''', artist["id"], artist["name"], artist_data["popularity"])
+               
+                collaboration = "FALSE"
+                if len(track["artists"]) > 1:
+                    collaboration = "TRUE"
+               
                 g.conn.execute(
                   '''INSERT INTO Is_On (artist_id, track_id, collaboration) VALUES  
                     (%s, %s, %s)''', artist["id"], track["id"], collaboration)
-              except Exception: 
-                #print("Is_On problem")
-                pass
-              if track["album"]["album_type"] == "album":
-                  album_by_artist = "FALSE"
+            
+                if track["album"]["album_type"] == "album":
+                    album_by_artist = "FALSE"
 
-                  for album_artist in track["album"]["artists"]:
-                      if album_artist["id"] == artist["id"]:
-                          album_by_artist = "TRUE"
-                  
-                  try:
+                    for album_artist in track["album"]["artists"]:
+                        if album_artist["id"] == artist["id"]:
+                            album_by_artist = "TRUE"
+                    
                     g.conn.execute(
                       '''INSERT INTO From (artist_id, track_id, album_id, album_by_artist) VALUES  
                         (%s, %s, %s, %s)''', artist["id"], track["id"], track["album"]["id"], album_by_artist)
-                  except Exception: 
-                    #print("From problem")
-                    pass
-          if count >= 40:
+          except Exception:
+            #print("SQL problem for track - may already be added.")
+            pass
+          if count >= 30:
             break    
       if "next" in playlist:
         playlist = sp.next(playlist)

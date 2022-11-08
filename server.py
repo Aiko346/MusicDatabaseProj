@@ -120,76 +120,77 @@ def index():
   mood_options = []
   genre_options = []
   if 'username' in session:
-    print(session['username'])
-    cursor = g.conn.execute(
-    """SELECT DISTINCT E.id, E.name
-    FROM existing_user_playlists E
-    WHERE username=%s""", session['username'])
-    for result in cursor:
-      # can also be accessed using result[0]
-      playlist_options.append({'name': result['name'], 'id': result['id']})
+    try: 
+      cursor = g.conn.execute(
+      """SELECT DISTINCT E.id, E.name
+      FROM existing_user_playlists E
+      WHERE username=%s""", session['username'])
+      for result in cursor:
+        # can also be accessed using result[0]
+        playlist_options.append({'name': result['name'], 'id': result['id']})
 
-    cursor = g.conn.execute(
-    """
-    SELECT DISTINCT F.display_name AS name, F.id
-    FROM friends F, is_friends_with I
-    WHERE I.username=%s AND F.id=I.friend_id
-    """, session['username'])
-    for result in cursor:
-      # can also be accessed using result[0]
-      liked_by_options.append({'name': result['name'], 'id': result['id']})
+      cursor = g.conn.execute(
+      """
+      SELECT DISTINCT F.display_name AS name, F.id
+      FROM friends F, is_friends_with I
+      WHERE I.username=%s AND F.id=I.friend_id
+      """, session['username'])
+      for result in cursor:
+        # can also be accessed using result[0]
+        liked_by_options.append({'name': result['name'], 'id': result['id']})
 
-    # all albums associated with tracks on one of the user's existing playlists
-    cursor = g.conn.execute(
-    """
-    SELECT DISTINCT A.name, A.id
-    FROM Released_On R, Tracks T, Albums A, Saved_To S, existing_user_playlists E
-    WHERE A.id=R.album_id AND R.track_id=S.track_id AND S.existing_playlist_id=E.id
-    AND E.username=%s
-    """, session['username'])
-    for result in cursor:
-      # can also be accessed using result[0]
-      album_options.append({'name': result['name'], 'id': result['id']})
+      # all albums associated with tracks on one of the user's existing playlists
+      cursor = g.conn.execute(
+      """
+      SELECT DISTINCT A.name, A.id
+      FROM Released_On R, Tracks T, Albums A, Saved_To S, existing_user_playlists E
+      WHERE A.id=R.album_id AND R.track_id=S.track_id AND S.existing_playlist_id=E.id
+      AND E.username=%s
+      """, session['username'])
+      for result in cursor:
+        # can also be accessed using result[0]
+        album_options.append({'name': result['name'], 'id': result['id']})
 
-    # all artists associated with tracks on one of the user's existing playlists
-    cursor = g.conn.execute(
-    """
-    SELECT DISTINCT A.name, A.id
-    FROM Is_On I, Tracks T, Artists A, Saved_To S, existing_user_playlists E
-    WHERE A.id=I.artist_id AND I.track_id=S.track_id AND S.existing_playlist_id=E.id
-    AND E.username=%s
-    """, session['username'])
-    for result in cursor:
-      # can also be accessed using result[0]
-      artist_options.append({'name': result['name'], 'id': result['id']})
+      # all artists associated with tracks on one of the user's existing playlists
+      cursor = g.conn.execute(
+      """
+      SELECT DISTINCT A.name, A.id
+      FROM Is_On I, Tracks T, Artists A, Saved_To S, existing_user_playlists E
+      WHERE A.id=I.artist_id AND I.track_id=S.track_id AND S.existing_playlist_id=E.id
+      AND E.username=%s
+      """, session['username'])
+      for result in cursor:
+        # can also be accessed using result[0]
+        artist_options.append({'name': result['name'], 'id': result['id']})
 
-    # all moods from this user
-    cursor = g.conn.execute(
-    """
-    SELECT DISTINCT M.mood as name
-    FROM assigned_Mood_To M
-    WHERE M.username=%s
-    UNION
-    SELECT DISTINCT M.mood as name
-    FROM assigned_Mood_To2 M
-    WHERE M.username=%s
-    """, session['username'], session['username'])
-    for result in cursor:
-      # can also be accessed using result[0]
-      mood_options.append({'name': result['name']})
+      # all moods from this user
+      cursor = g.conn.execute(
+      """
+      SELECT DISTINCT M.mood as name
+      FROM assigned_Mood_To M
+      WHERE M.username=%s
+      UNION
+      SELECT DISTINCT M.mood as name
+      FROM assigned_Mood_To2 M
+      WHERE M.username=%s
+      """, session['username'], session['username'])
+      for result in cursor:
+        # can also be accessed using result[0]
+        mood_options.append({'name': result['name']})
 
-    # all genres from this user
-    cursor = g.conn.execute(
-    """
-    SELECT DISTINCT I.genre
-    FROM Genres G, existing_user_playlists E, Saved_To S, Is_In I, Is_On O
-    WHERE I.artist_id=O.artist_id AND O.track_id=S.track_id AND S.existing_playlist_id=E.id
-    AND E.username=%s
-    """, session['username'])
-    for result in cursor:
-      # can also be accessed using result[0]
-      genre_options.append({'name': result['genre']})
-
+      # all genres from this user
+      cursor = g.conn.execute(
+      """
+      SELECT DISTINCT I.genre
+      FROM Genres G, existing_user_playlists E, Saved_To S, Is_In I, Is_On O
+      WHERE I.artist_id=O.artist_id AND O.track_id=S.track_id AND S.existing_playlist_id=E.id
+      AND E.username=%s
+      """, session['username'])
+      for result in cursor:
+        # can also be accessed using result[0]
+        genre_options.append({'name': result['genre']})
+    except Exception:
+      print("Problem getting user data")
     cursor.close()
 
   #

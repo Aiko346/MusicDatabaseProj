@@ -307,67 +307,127 @@ def fill_home():  # put data from spotify into SQL
   # if not sp.oauth_manager.validate_token(session["access_token"]):
   #   sp.oauth_manager.refresh_access_token(session["refresh_token"])
   #   print("here")
-  # if not sp.oauth_manager.validate_token(session["access_token"]): BROKEN 
+  # if not sp.oauth_manager.validate_token(session["access_token"]):  #thanks invalid access even whennot?
   #   print("not valid?")
-  #   return redirect("/get-data") if fails
-    
+  #   return redirect("/get-data")
+  
   #TODO: add try except in case all else fails around this
-  playlist_info = sp.current_user_playlists(limit=3)  # for testing
+  try:
+    playlist_info = sp.current_user_playlists(limit=1, offset=3)  # for testing
+  except Exception:
+    return redirect("/get-data")
+  
   #print("in")
   for item in playlist_info["items"]:
-    #print("in")
-    #print(item)
+    
     playlist_data = sp.user_playlist(user=item["owner"]["id"],
-                                     playlist_id=item["id"], fields="tracks,id,next,name")
+                                     playlist_id=item["id"], fields="tracks,id,next,name,total")
     
     #print(playlist_data)
     playlist = playlist_data["tracks"]
-    print('INSERT INTO Existing_User_Playlists (id, username, name, length) VALUES ' +
-        '("{id}", "{username}", "{name}", {length});'.format(
-            id=playlist_data["id"], name=playlist_data["name"], username="agerra", length=len(playlist["items"])
-        ))
+    #print(playlist)
+    print(playlist_data["name"])
+    try:
+      g.conn.execute(
+        '''INSERT INTO Existing_User_Playlists (id, username, name, length) VALUES 
+          (%s, %s, %s, %s)''', 
+          playlist_data["id"], session["username"], playlist_data["name"], playlist['total'])
+    except Exception: 
+      print("Existing_User_Playlists problem")
+    # # print('INSERT INTO Existing_User_Playlists (id, username, name, length) VALUES ' +
+    #     '("{id}", "{username}", "{name}", {length});'.format(
+    #         id=playlist_data["id"], name=playlist_data["name"], username="agerra", length=len(playlist["items"])
+    #     ))
     while playlist != None:    
+      print("playlist")
       for track_info in playlist["items"]:
           track = track_info["track"]
-          print('INSERT INTO Tracks (id, name, popularity, duration, release_date) VALUES ' +
-                '("{id}", "{name}", {popularity}, {duration}, "{release_date}");'.format(
-                    id=track["id"], name=track["name"], popularity=track["popularity"], duration=track["duration_ms"],
-                    release_date=track["album"]["release_date"]
-                ))
+          try:
+            g.conn.execute(
+              '''INSERT INTO Tracks (id, name, popularity, duration, release_date) VALUES 
+                (%s, %s, %s, %s, %s)''', 
+                    track["id"], track["name"], track["popularity"], track["duration_ms"], track["album"]["release_date"])
+          except Exception: 
+            print("Tracks problem")
+          # print('INSERT INTO Tracks (id, name, popularity, duration, release_date) VALUES ' +
+          #       '("{id}", "{name}", {popularity}, {duration}, "{release_date}");'.format(
+          #           id=track["id"], name=track["name"], popularity=track["popularity"], duration=track["duration_ms"],
+          #           release_date=track["album"]["release_date"]
+          #       ))
 
-          print('INSERT INTO Saved_To (track_id, existing_playlist_id, date_added) VALUES ' +
-                '("{track_id}", "{existing_playlist_id}", "{date_added}");'.format(
-                    track_id=track["id"], existing_playlist_id=playlist_data["id"], date_added=track_info["added_at"][:10]))
+          try:
+            g.conn.execute(
+              '''INSERT INTO Saved_To (track_id, existing_playlist_id, date_added) VALUES 
+                (%s, %s, %s)''', 
+                    track["id"], playlist_data["id"], track_info["added_at"][:10])
+          except Exception: 
+            print("Saved_To problem")
+
+          # print('INSERT INTO Saved_To (track_id, existing_playlist_id, date_added) VALUES ' +
+          #       '("{track_id}", "{existing_playlist_id}", "{date_added}");'.format(
+          #           track_id=track["id"], existing_playlist_id=playlist_data["id"], date_added=track_info["added_at"][:10]))
 
           #albums
           if track["album"]["album_type"] == "album":
-              print('INSERT INTO Albums (id, name, release_date) VALUES ' +
-                    '("{id}", "{name}", "{release_date}");'.format(id=track["album"]["id"], name=track["album"]["name"], release_date=track["album"]["release_date"]))
+               try:
+                  g.conn.execute(
+                    '''INSERT INTO Albums (id, name, release_date) VALUES  
+                      (%s, %s, %s)''', 
+                  track["album"]["id"], track["album"]["name"], track["album"]["release_date"])
+               except Exception: 
+                print("Albums problem")
+             
+                # print('INSERT INTO Albums (id, name, release_date) VALUES ' +
+                #     '("{id}", "{name}", "{release_date}");'.format(id=track["album"]["id"], name=track["album"]["name"], release_date=track["album"]["release_date"]))
           
-
           # artists of track
           for artist in track["artists"]:
               artist_data = sp.artist(artist["id"])
-
               for genre in artist_data["genres"]:
-                  #genre
-                  print('INSERT INTO Genres (genre) VALUES ' +
-                  '("{genre}");'.format(genre=genre))
-                  #Artist Is_In Genre
-                  print('INSERT INTO Is_In (artist_id, genre) VALUES ' +
-                  '("{artist_id}", "{genre}");'.format(artist_id=artist["id"], genre=genre))
+                  #Genres
+                  try:
+                   g.conn.execute(
+                      '''INSERT INTO Genres (genre) VALUES   
+                        (%s)''', genre)
+                  except Exception: 
+                    print("Genres problem")
+                  # print('INSERT INTO Genres (genre) VALUES ' +
+                  # '("{genre}");'.format(genre=genre))
 
-              print('INSERT INTO Artists (id, name, popularity) VALUES ' +
-                    '("{id}", "{name}", {popularity});'.format(id=artist["id"],
-                                                                          name=artist["name"], popularity=artist_data["popularity"]))
+                  #Artist Is_In Genre
+                  try:
+                   g.conn.execute(
+                      '''INSERT INTO Is_In (artist_id, genre) VALUES    
+                        (%s, %s)''', artist["id"], genre)
+                  except Exception: 
+                    print("Is_In problem")
+                  # print('INSERT INTO Is_In (artist_id, genre) VALUES ' +
+                  # '("{artist_id}", "{genre}");'.format(artist_id=artist["id"], genre=genre))
+              
+              #Artists
+              try:
+                   g.conn.execute(
+                      '''INSERT INTO Artists (id, name, popularity) VALUES     
+                        (%s, %s, %s)''', artist["id"], artist["name"], artist_data["popularity"])
+              except Exception: 
+                print("Artists problem")
+              # print('INSERT INTO Artists (id, name, popularity) VALUES ' +
+              #       '("{id}", "{name}", {popularity});'.format(id=artist["id"],
+              #                                                             name=artist["name"], popularity=artist_data["popularity"]))
 
               collaboration = "FALSE"
               if len(track["artists"]) > 1:
                   collaboration = "TRUE"
-              print('INSERT INTO Is_On (artist_id, track_id, collaboration) VALUES ' +
-                    '("{artist_id}", "{track_id}", {collaboration});'.format(
-                        artist_id=artist["id"],
-                        track_id=track["id"], collaboration=collaboration))
+              try:
+                g.conn.execute(
+                  '''INSERT INTO Is_On (artist_id, track_id, collaboration) VALUES  
+                    (%s, %s, %s)''', artist["id"], track["id"], collaboration)
+              except Exception: 
+                print("Is_On problem")
+              # print('INSERT INTO Is_On (artist_id, track_id, collaboration) VALUES ' +
+              #       '("{artist_id}", "{track_id}", {collaboration});'.format(
+              #           artist_id=artist["id"],
+              #           track_id=track["id"], collaboration=collaboration))
 
               if track["album"]["album_type"] == "album":
                   album_by_artist = "FALSE"
@@ -375,46 +435,24 @@ def fill_home():  # put data from spotify into SQL
                   for album_artist in track["album"]["artists"]:
                       if album_artist["id"] == artist["id"]:
                           album_by_artist = "TRUE"
+                  
+                  try:
+                    g.conn.execute(
+                      '''INSERT INTO From (artist_id, track_id, album_id, album_by_artist) VALUES  
+                        (%s, %s, %s, %s)''', artist["id"], track["id"], track["album"]["id"], album_by_artist)
+                  except Exception: 
+                    print("From problem")
 
-                  print('INSERT INTO From (artist_id, track_id, album_id, album_by_artist) VALUES ' +
-                        '("{artist_id}", "{track_id}", "{album_id}", {album_by_artist});'.format(
-                            artist_id=artist["id"],
-                            track_id=track["id"], album_id=track["album"]["id"], album_by_artist=album_by_artist))
+                  # print('INSERT INTO From (artist_id, track_id, album_id, album_by_artist) VALUES ' +
+                  #       '("{artist_id}", "{track_id}", "{album_id}", {album_by_artist});'.format(
+                  #           artist_id=artist["id"],
+                  #           track_id=track["id"], album_id=track["album"]["id"], album_by_artist=album_by_artist))
     
       if "next" in playlist:
         playlist = sp.next(playlist)
       else:
         playlist = None
-       
-    
-        # print("yes")
-        # while playlist_data["next"]:
-        #     playlist = 
-        #     for track_info in playlist["items"]:
-        #         track = track_info["track"]
-        #         print(track)
-        #         # print(track["artists"][0]["name"] + " " + track["name"])
-        #         print()
-  # playlist_data = sp.user_playlist(user="zsp0yz1vi3brxtpz39a8zefqk", playlist_id="1aKB89kQyvWFVcexsgjDGN", fields="tracks,id,next,name")
-  # #print(playlist_data)
-  # flag = False
-  # playlist = playlist_data["tracks"]
-  # while playlist != None:
-  #   if "next" in playlist:
-  #         print(playlist["next"])
-  #         flag = False
-  #         playlist = sp.next(playlist)
-  #         print("false")
-  #   else:
-  #     playlist = None
-  #     flag = True #end loop if done with this playlist
-  #     print("true")
-  # get songs from playlists
-
-  # add to tracks
-  # print(session["access_token"])
-  # print(session["username"])
-  # print(session["return_to"])
+  
   return redirect("/")
 
 @app.route('/add-friend', methods=["GET", "POST"])
@@ -496,7 +534,7 @@ def filter():
   for option in request.form.keys():
     if option[0] in requested.keys():
       requested[option[0]].append(request.form[option])
-  
+  print(requested)
   #albums
   album_track_ids = set()
   for album in requested["B"]:
@@ -543,6 +581,7 @@ def filter():
       update_set(playlist_ids, cursor)
   if len(requested["P"]) > 0:
     results.append(playlist_ids)
+    print(playlist_ids)
 
   #artists
   artist_track_ids = set()
@@ -555,12 +594,12 @@ def filter():
       INTERSECT
       SELECT I.track_id 
       FROM Is_On I  
-      WHERE I.track_id=%s
+      WHERE I.artist_id=%s
       """, session['username'], artist)
       update_set( artist_track_ids, cursor)
   if len(requested["R"]) > 0:
     results.append( artist_track_ids)
- 
+    print(artist_track_ids)
   #moods
   mood_track_ids = set()
   for mood in requested["M"]:
@@ -581,6 +620,7 @@ def filter():
   #find intersection of filters that had any selections
   track_ids = set()
   #if nothing selected, show all tracks on user's stored playlists 
+  print(results)
   if len(results) == 0:
     cursor = g.conn.execute(
       """

@@ -315,7 +315,7 @@ def fill_home():  # put data from spotify into SQL
       pass
     
     count = 0 #added to limit download time. In the future, could be made more efficient by combining inserts.
-    while playlist != None and count < 40:    
+    while playlist != None and count < 30:    
       for track_info in playlist["items"]:
           count = count + 1
           track = track_info["track"]

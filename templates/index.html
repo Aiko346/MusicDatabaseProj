@@ -23,7 +23,13 @@
   
   {% if 'username' in session %}
   <p><a href="logout">Logout</a></p>
-  
+
+  <div id="tracks">
+  {% for n in tracks %}
+  <p id="{{ n.id }}">{{ tracks[n].name }} - {% for a in tracks[n].artist %} {{ a }} {% endfor %}</p>
+  {% endfor %}
+  </div>
+
   <p>Add a friend</p>
   <form method="POST" action="/add-friend">
     <input type="text" id="friend-id" name="friend-id">
@@ -56,25 +62,25 @@
     </fieldset>
     <fieldset id="album-options">
       {% for n in album_options %}
-      <input type="checkbox" id="{{ n.id }}" name="{{ 'B' ~ loop.index }}" value="{{ n[id] }}">
+      <input type="checkbox" id="{{ n.id }}" name="{{ 'B' ~ loop.index }}" value="{{ n.id }}">
       <label for="{{ n.id }}">{{ n["name"] }}</label><br>
       {% endfor %}
     </fieldset>
     <fieldset id="liked-by-options">
       {% for n in liked_by_options %}
-      <input type="checkbox" id="{{ n.id }}" name="{{ 'L' ~ loop.index }}" value="{{ n[id] }}">
+      <input type="checkbox" id="{{ n.id }}" name="{{ 'L' ~ loop.index }}" value="{{ n.id }}">
       <label for="{{ n.id }}">{{ n["name"] }}</label><br>
       {% endfor %}
     </fieldset>
     <fieldset id="playlist-options"> 
       {% for n in playlist_options %}
-      <input type="checkbox" id="{{ n.id }}" name="{{ 'P' ~ loop.index }}" value="{{ n[id] }}">
+      <input type="checkbox" id="{{ n.id }}" name="{{ 'P' ~ loop.index }}" value="{{ n.id }}">
       <label for="{{ n.id }}">{{ n["name"] }}</label><br>
       {% endfor %}
     </fieldset>
     <fieldset id="artist-options">
       {% for n in artist_options %}
-      <input type="checkbox" id="{{ n.id }}" name="{{ 'R' ~ loop.index }}" value="{{ n[id] }}">
+      <input type="checkbox" id="{{ n.id }}" name="{{ 'R' ~ loop.index }}" value="{{ n.id }}">
       <label for="{{ n.id }}">{{ n["name"] }}</label><br>
       {% endfor %}
     </fieldset>

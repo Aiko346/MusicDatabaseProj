@@ -142,7 +142,6 @@ def index():
   if request.method == 'POST':
     tracks = filter()
 
-
   playlist_options = []
   liked_by_options = []
   album_options = []
@@ -156,21 +155,6 @@ def index():
     WHERE username=%s""", session['username'])
     for result in cursor:
       playlist_options.append({'name': result['name'], 'id': result['id']})  # can also be accessed using result[0]
-    #for getting tracks liked by a friend
-    # cursor = g.conn.execute(
-    # """
-    # SELECT DISTINCT T.name, T.id 
-    # FROM saved_to S, tracks T, existing_user_playlists E, liked_by L, friends   
-    # WHERE E.username=%s AND E.id = S.existing_playlist_id AND 
-    # T.id = S.track_id 
-    # INTERSECT
-    # SELECT DISTINCT T.name, T.id 
-    # FROM liked_by L, friends F, is_friends_with I  
-    # WHERE I.username=%s AND I.friend_id = F.id AND 
-    # T.id = S.track_id AND 
-    # """, session['username'], session['username'])
-    # for result in cursor:
-    #   playlist_options.append({'name': result['name'], 'id': result['id']})  # can also be accessed using result[0]
    
     cursor = g.conn.execute(
     """
@@ -402,18 +386,152 @@ def register():
   return render_template("register.html")
 
 
-@app.route('/filter', methods=['POST'])
+
 def filter():
   #filter_option = request.form['filter-option']
-  for option in request.form:
-    print(option)
-  tracks = []
-  #g.conn.execute('INSERT INTO test(name) VALUES (%s)', name)
-
+ 
   
+  requested = {"B": [], "L": [], "P": [], "R": [], "M":[]}
+  results = []
+  for option in request.form.keys():
+    if option[0] in requested.keys():
+      requested[option[0]].append(request.form[option])
+  
+  
+  #albums
+  album_track_ids = set()
+  for album in requested["B"]:
+      cursor = g.conn.execute(
+      """
+      SELECT S.track_id AS id
+      FROM saved_to S, existing_user_playlists E  
+      WHERE E.username=%s AND E.id = S.existing_playlist_id
+      INTERSECT
+      SELECT R.track_id 
+      FROM released_on R  
+      WHERE R.album_id=%s
+      """, session['username'], album)
+      update_set(album_track_ids, cursor)
+  if len(requested["B"]) > 0:
+    results.append(album_track_ids)
+
+  #liked_by
+  liked_by_track_ids = set()
+  for friend in requested["L"]:
+      cursor = g.conn.execute(
+      """
+      SELECT S.track_id AS id
+      FROM saved_to S, existing_user_playlists E  
+      WHERE E.username=%s AND E.id = S.existing_playlist_id
+      INTERSECT
+      SELECT L.track_id 
+      FROM liked_by L  
+      WHERE L.friend_id=%s
+      """, session['username'], friend)
+      update_set(liked_by_track_ids, cursor)
+  if len(requested["L"]) > 0:
+    results.append(liked_by_track_ids)
+
+  #playlists 
+  playlist_ids = set()
+  for playlist in requested["P"]:
+      cursor = g.conn.execute(
+      """
+      SELECT S.track_id AS id
+      FROM saved_to S, existing_user_playlists E  
+      WHERE E.username=%s AND E.id = S.existing_playlist_id AND E.id=%s
+      """, session['username'], playlist)
+      update_set(playlist_ids, cursor)
+  if len(requested["P"]) > 0:
+    results.append(playlist_ids)
+
+  #artists
+  artist_track_ids = set()
+  for artist in requested["R"]:
+      cursor = g.conn.execute(
+      """
+      SELECT S.track_id AS id
+      FROM saved_to S, existing_user_playlists E  
+      WHERE E.username=%s AND E.id = S.existing_playlist_id
+      INTERSECT
+      SELECT I.track_id 
+      FROM Is_On I  
+      WHERE I.track_id=%s
+      """, session['username'], artist)
+      update_set( artist_track_ids, cursor)
+  if len(requested["R"]) > 0:
+    results.append( artist_track_ids)
+ 
+  #moods
+  #artists
+  mood_track_ids = set()
+  for mood in requested["M"]:
+      cursor = g.conn.execute(
+      """
+      SELECT DISTINCT R.track_id AS id
+      FROM Released_On R, Assigned_Mood_To2 M
+      WHERE R.album_id=M.album_id AND M.username=%s AND M.mood=%s  
+      UNION
+      SELECT M.track_id
+      FROM Assigned_mood_to M
+      WHERE M.username=%s AND M.mood=%s
+      """, session['username'], mood, session['username'], mood)
+      update_set(mood_track_ids, cursor)
+  if len(requested["M"]) > 0:
+    results.append(mood_track_ids)
+  #find intersection of filters that had any selections
+  
+  track_ids = set()
+
+  #if nothing selected, show all tracks on user's stored playlists 
+  if len(results) == 0:
+    cursor = g.conn.execute(
+      """
+      SELECT S.track_id AS id
+      FROM saved_to S, existing_user_playlists E  
+      WHERE E.username=%s
+      """, session['username'])
+    update_set(track_ids, cursor)
+  if len(results) > 0:
+    track_ids = results.pop()
+  for r in results:
+    track_ids = track_ids.intersection(r)
+  
+  
+  
+  #...
+  #do sql query on each track id to get track name and artists 
+  tracks = {}
+  for id in track_ids:
+    cursor = g.conn.execute(
+    """
+    SELECT DISTINCT T.name, T.id, A.name AS artist
+    FROM Is_On I, Artists A, tracks T
+    WHERE T.id=%s AND I.artist_id = A.id AND T.id=I.track_id 
+    """, id)
+    update_tracks(cursor, tracks)
+               #tracks.append({'name': result['name'], 'id': result['id'], 'artist': result['artist']})  # can also be accessed using result[0]
+  
+      #liked_by filter
+     
+        #tracks.append({'name': result['name'], 'id': result['id'], 'artist': result['artist']})  # can also be accessed using result[0]
+   
+  #g.conn.execute('INSERT INTO test(name) VALUES (%s)', name)
   return tracks
 
+# 
 
+def update_set(set, cursor):
+  for result in cursor:
+    set.add(result["id"])
+
+def update_tracks(cursor, tracks):
+   for result in cursor:
+        if result["id"] in tracks:
+          tracks[result["id"]]["artist"].append(result["artist"])
+        else:
+          tracks[result["id"]] = {'name': result['name'], 'artist': [result['artist']]}
+       
 
 
 @app.route('/new-playlist', methods=['POST'])
@@ -428,7 +546,7 @@ def new_playlist():
   #       print(session[key])
   #   session[name].append(name)
   #   for playlist_name in session['playlist']:  
-  #       print(len(session['playlist']))
+  #       print(len(session['playlist']))</div>
   #       print(playlist_name)
   #   print()
   # else:

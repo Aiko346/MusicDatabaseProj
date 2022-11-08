@@ -56,21 +56,6 @@ DATABASEURI = "postgresql://na2852:1353@34.75.94.195/proj1part2"
 #
 engine = create_engine(DATABASEURI)
 
-#
-# Example of running queries in your database
-# Note that this will probably not work if you already have a table named 'test' in your database, containing meaningful data. This is only an example showing you how to run queries in your database using SQLAlchemy.
-#
-engine.execute("""CREATE TABLE IF NOT EXISTS test (
-  id serial,
-  name text
-);""")
-# engine.execute("""INSERT INTO test(name) VALUES ('grace hopper'), ('alan turing'), ('ada lovelace');""")
-
-# track current filter params in session
-# format session.filter_yes={playlist: [], song: [], mood: [], artist:[], album[], liked_by[]}
-# format session.filter_no={playlist: [], song: [], mood: [], artist:[], album[], liked_by[]}
-
-
 @app.before_request
 def before_request():
   """
@@ -100,7 +85,6 @@ def teardown_request(exception):
     pass
 
 
-#
 # @app.route is a decorator around index() that means:
 #   run index() whenever the user tries to access the "/" path using a GET request
 #
@@ -125,15 +109,6 @@ def index():
   See its API: https://flask.palletsprojects.com/en/2.0.x/api/?highlight=incoming%20request%20data
 
   """
-
-  # else:
-  #   print('no username')
-  # DEBUG: this is debugging code to see what request looks like
-  # print(request.args)
-
-  #
-  # example of a database query
-  #
   tracks = []
   if request.method == 'POST':
     tracks = filter()
@@ -143,6 +118,7 @@ def index():
   album_options = []
   artist_options = []
   mood_options = []
+  genre_options = []
   if 'username' in session:
     print(session['username'])
     cursor = g.conn.execute(
@@ -202,6 +178,18 @@ def index():
       # can also be accessed using result[0]
       mood_options.append({'name': result['name']})
 
+    # all genres from this user
+    cursor = g.conn.execute(
+    """
+    SELECT DISTINCT I.genre
+    FROM Genres G, existing_user_playlists E, Saved_To S, Is_In I, Is_On O
+    WHERE I.artist_id=O.artist_id AND O.track_id=S.track_id AND S.existing_playlist_id=E.id
+    AND E.username=%s
+    """, session['username'])
+    for result in cursor:
+      # can also be accessed using result[0]
+      genre_options.append({'name': result['genre']})
+
     cursor.close()
 
   #
@@ -233,7 +221,7 @@ def index():
   # testlist = ["a", "b", "c"]
   # album_options = [{"id": "a", "name": "aname"}, {"id": "b", "name": "bname"}]
 
-  context = dict(tracks=tracks, liked_by_options=liked_by_options, mood_options=mood_options,
+  context = dict(genre_options=genre_options, tracks=tracks, liked_by_options=liked_by_options, mood_options=mood_options,
                  album_options=album_options, playlist_options=playlist_options, artist_options=artist_options)
 
   #
@@ -289,8 +277,6 @@ def data_processing():
           "client_id": client_id, "client_secret": client_secret
   })
 
-  # r = result.json()
-  print()
   r = result.json()
 
   session["access_token"] = r["access_token"]
@@ -324,7 +310,6 @@ def fill_home():  # put data from spotify into SQL
     
     playlist = playlist_data["tracks"]
    
-    print(playlist_data["name"])
     try:
       g.conn.execute(
         '''INSERT INTO Existing_User_Playlists (id, username, name, length) VALUES 
@@ -336,7 +321,7 @@ def fill_home():  # put data from spotify into SQL
     
     count = 0 #added to limit download time. In the future, could be made more efficient by combining inserts.
     while playlist != None and count <= 40:    
-      print("playlist")
+      
       for track_info in playlist["items"]:
           count = count + 1
           track = track_info["track"]
@@ -429,7 +414,7 @@ def fill_home():  # put data from spotify into SQL
 
 @app.route('/add-friend', methods=["GET", "POST"])
 def add_friend():
-    print("adding_friend")
+    
     if request.method == 'POST':
       # refresh access token (only valid for about an hour)
       result = requests.post(url="https://accounts.spotify.com/api/token", data={
@@ -501,12 +486,12 @@ def register():
 
 
 def filter():
-  requested = {"B": [], "L": [], "P": [], "R": [], "M":[]}
+  requested = {"B": [], "L": [], "P": [], "R": [], "M":[], "G": []}
   results = []
   for option in request.form.keys():
     if option[0] in requested.keys():
       requested[option[0]].append(request.form[option])
-  print(requested)
+  
   #albums
   album_track_ids = set()
   for album in requested["B"]:
@@ -553,7 +538,7 @@ def filter():
       update_set(playlist_ids, cursor)
   if len(requested["P"]) > 0:
     results.append(playlist_ids)
-    print(playlist_ids)
+   
 
   #artists
   artist_track_ids = set()
@@ -571,7 +556,7 @@ def filter():
       update_set( artist_track_ids, cursor)
   if len(requested["R"]) > 0:
     results.append( artist_track_ids)
-    print(artist_track_ids)
+   
   #moods
   mood_track_ids = set()
   for mood in requested["M"]:
@@ -589,10 +574,27 @@ def filter():
   if len(requested["M"]) > 0:
     results.append(mood_track_ids)
   
+  #genres
+  genre_track_ids = set()
+  for genre in requested["G"]:
+      cursor = g.conn.execute(
+      """
+      SELECT S.track_id AS id
+      FROM saved_to S, existing_user_playlists E  
+      WHERE E.username=%s AND E.id = S.existing_playlist_id
+      INTERSECT
+      SELECT O.track_id
+      FROM Is_In I, Is_On O
+      WHERE I.genre=%s AND I.artist_id=O.artist_id
+      """, session['username'], genre)
+      update_set(genre_track_ids, cursor)
+  if len(requested["G"]) > 0:
+    results.append(genre_track_ids)
+
   #find intersection of filters that had any selections
   track_ids = set()
   #if nothing selected, show all tracks on user's stored playlists 
-  print(results)
+  
   if len(results) == 0:
     cursor = g.conn.execute(
       """

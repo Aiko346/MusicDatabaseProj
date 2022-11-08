@@ -9,15 +9,6 @@
 
 <body>
   <h1>Welcome to Playlist Filter!</h1>
-  <!-- <div>{{data}}</div>
-  <div>{{testlist}}</div>
-  <div>
-    {% for n in data %}
-    <div>{{n}}</div>
-    {% endfor %}
-  </div> -->
-
-  
 
   <p><a href="register">Register</a></p>
   
@@ -46,7 +37,7 @@
   </form>
 
  
-
+  <p></p>
   <form method="POST" action="/" id="filtering-form">
     <fieldset>
       <legend>Filtering Options</legend>
@@ -60,6 +51,8 @@
       <label for="artist">Artist</label><br>
       <input type="radio" id="mood" name="filter_option" value="mood">
       <label for="mood">Mood</label><br>
+      <input type="radio" id="genre" name="filter_option" value="genre">
+      <label for="genre">Genre</label><br>
     </fieldset>
     <fieldset id="album-options">
       {% for n in album_options %}
@@ -91,6 +84,12 @@
       <label for="{{ n.name }}">{{ n["name"] }}</label><br>
       {% endfor %}
     </fieldset>
+    <fieldset id="genre-options">
+      {% for n in genre_options %}
+      <input type="checkbox" id="{{ n.name }}" name="{{ 'G' ~ loop.index }}" value="{{ n.name }}">
+      <label for="{{ n.name }}">{{ n["name"] }}</label><br>
+      {% endfor %}
+    </fieldset>
     <input type="submit" value="Submit">
   </form>
 
@@ -117,7 +116,7 @@
   <script src="jquery.js"></script>
   <script>
     $(document).ready(function () {
-      let options = ["album", "liked-by", "playlist", "artist", "mood"];
+      let options = ["album", "liked-by", "playlist", "artist", "mood", "genre"];
       options.forEach(function (option) {
         $("#"+option+"-options").hide();
       });

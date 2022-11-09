@@ -124,7 +124,9 @@ def index():
       cursor = g.conn.execute(
       """SELECT DISTINCT E.id, E.name
       FROM existing_user_playlists E
-      WHERE username=%s""", session['username'])
+      WHERE username=%s
+      ORDER BY E.name
+      """, session['username'])
       for result in cursor:
         # can also be accessed using result[0]
         playlist_options.append({'name': result['name'], 'id': result['id']})
@@ -134,6 +136,7 @@ def index():
       SELECT DISTINCT F.display_name AS name, F.id
       FROM friends F, is_friends_with I
       WHERE I.username=%s AND F.id=I.friend_id
+      ORDER BY F.display_name
       """, session['username'])
       for result in cursor:
         # can also be accessed using result[0]
@@ -146,6 +149,7 @@ def index():
       FROM Released_On R, Tracks T, Albums A, Saved_To S, existing_user_playlists E
       WHERE A.id=R.album_id AND R.track_id=S.track_id AND S.existing_playlist_id=E.id
       AND E.username=%s
+      ORDER BY A.name
       """, session['username'])
       for result in cursor:
         # can also be accessed using result[0]
@@ -158,6 +162,7 @@ def index():
       FROM Is_On I, Tracks T, Artists A, Saved_To S, existing_user_playlists E
       WHERE A.id=I.artist_id AND I.track_id=S.track_id AND S.existing_playlist_id=E.id
       AND E.username=%s
+      ORDER BY A.name
       """, session['username'])
       for result in cursor:
         # can also be accessed using result[0]
@@ -173,6 +178,7 @@ def index():
       SELECT DISTINCT M.mood as name
       FROM assigned_Mood_To2 M
       WHERE M.username=%s
+      ORDER BY M.mood
       """, session['username'], session['username'])
       for result in cursor:
         # can also be accessed using result[0]
@@ -185,6 +191,7 @@ def index():
       FROM Genres G, existing_user_playlists E, Saved_To S, Is_In I, Is_On O
       WHERE I.artist_id=O.artist_id AND O.track_id=S.track_id AND S.existing_playlist_id=E.id
       AND E.username=%s
+      ORDER BY I.genre
       """, session['username'])
       for result in cursor:
         # can also be accessed using result[0]
@@ -590,6 +597,7 @@ def filter():
     SELECT DISTINCT T.name, T.id, A.name AS artist
     FROM Is_On I, Artists A, tracks T
     WHERE T.id=%s AND I.artist_id = A.id AND T.id=I.track_id 
+    ORDER BY T.name
     """, id)
     update_tracks(cursor, tracks)
   return tracks

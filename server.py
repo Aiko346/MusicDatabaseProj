@@ -119,6 +119,8 @@ def index():
   artist_options = []
   mood_options = []
   genre_options = []
+
+
   if 'username' in session:
     try: 
       cursor = g.conn.execute(
@@ -178,7 +180,7 @@ def index():
       SELECT DISTINCT M.mood as name
       FROM assigned_Mood_To2 M
       WHERE M.username=%s
-      ORDER BY M.mood
+      ORDER BY name
       """, session['username'], session['username'])
       for result in cursor:
         # can also be accessed using result[0]
@@ -196,9 +198,10 @@ def index():
       for result in cursor:
         # can also be accessed using result[0]
         genre_options.append({'name': result['genre']})
+      cursor.close()
     except Exception:
       print("Problem getting user data")
-    cursor.close()
+      
 
   #
   # Flask uses Jinja templates, which is an extension to HTML where you can
@@ -279,8 +282,8 @@ def data_processing():
   auth = spotipy.oauth2.SpotifyOAuth(cache_handler = spotipy.cache_handler.FlaskSessionCacheHandler(session), client_id = client_id, client_secret = client_secret, redirect_uri = redirect_uri, scope = scopes)
   
   code = request.args.get("code")
-  auth.get_access_token(code)
-  #print(auth.get_cached_token())
+  auth.get_access_token(code, as_dict=False)
+  
   session["access_token"] = auth.get_cached_token()["access_token"]
   session["refresh_token"] = auth.get_cached_token()["refresh_token"]
 
@@ -289,17 +292,20 @@ def data_processing():
 
 @app.route('/fill-home')
 def fill_home():  # put data from spotify into SQL
-  sp = spotipy.Spotify(auth=session["access_token"], oauth_manager=SpotifyOAuth(scope=scopes, client_id=client_id, client_secret=client_secret, redirect_uri="http://localhost:8111/data-processing"))
-  
-  #if token not valid anymore since login, refresh JANKY, FIX
-  # if not sp.oauth_manager.validate_token(session["access_token"]):
-  #   sp.oauth_manager.refresh_access_token(session["refresh_token"])
-  #   print("here")
-  # if not sp.oauth_manager.validate_token(session["access_token"]):  #thanks invalid access even whennot?
-  #   print("not valid?")
-  #   return redirect("/get-data")
-  
-  #TODO: add try except in case all else fails around this
+  try:
+    sp = spotipy.Spotify(auth=session["access_token"])
+    redirect_uri = "http://localhost:8111/data-processing"
+    auth = spotipy.oauth2.SpotifyOAuth(cache_handler = spotipy.cache_handler.FlaskSessionCacheHandler(session), client_id = client_id, client_secret = client_secret, redirect_uri = redirect_uri, scope = scopes)
+    
+    if not auth.validate_token(auth.get_cached_token()): 
+      print("not valid?")
+      auth.refresh_access_token(auth.get_cached_token()["refresh_token"])
+      if not auth.validate_token(auth.get_cached_token()):
+        print("refresh failed")
+        return redirect("/logout")
+  except Exception:
+    return redirect("/logout")
+
   try:
     playlist_info = sp.current_user_playlists(limit=2)  # 2 to keep time manageable
   except Exception:

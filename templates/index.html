@@ -9,12 +9,9 @@
 
 <body>
   <h1>Welcome to Playlist Filter!</h1>
-
-  <p><a href="register">Register</a></p>
-  
   {% if 'username' in session %}
   <p><a href="logout">Logout</a></p>
-  <p><a href="fill-home">Get data from Spotify.</a> Will only add data, not remove anything. Make a new account for a clean slate.</p>
+  <p><a href="fill-home">Get data from Spotify.</a> Will only add data, not remove anything.</p>
 
   <div id="tracks">
   {% for n in tracks %}
@@ -30,6 +27,7 @@
   </form>
   {% else %}
   <p><a href="get-data">Login</a></p>
+  <p><a href="register">Register</a></p>
   {% endif %}
  
   <p>Intersection of results between filtering options, union of results within filering options</p>

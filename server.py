@@ -519,20 +519,16 @@ def filter():
       for option in request.form.keys():
         if option[0] in requested.keys():
           requested[option[0]].append(request.form[option])
-      
+      print(requested)
       #albums
       album_track_ids = set()
       for album in requested["B"]:
           cursor = g.conn.execute(
           """
-          SELECT S.track_id AS id
-          FROM saved_to S, existing_user_playlists E  
-          WHERE E.username=%s AND E.id = S.existing_playlist_id
-          INTERSECT
-          SELECT R.track_id 
+          SELECT R.track_id AS id
           FROM released_on R  
           WHERE R.album_id=%s
-          """, session['username'], album)
+          """, album)
           update_set(album_track_ids, cursor)
       if len(requested["B"]) > 0:
         results.append(album_track_ids)
@@ -542,14 +538,10 @@ def filter():
       for friend in requested["L"]:
           cursor = g.conn.execute(
           """
-          SELECT S.track_id AS id
-          FROM saved_to S, existing_user_playlists E  
-          WHERE E.username=%s AND E.id = S.existing_playlist_id
-          INTERSECT
-          SELECT L.track_id 
+          SELECT L.track_id AS id
           FROM liked_by L  
           WHERE L.friend_id=%s
-          """, session['username'], friend)
+          """, friend)
           update_set(liked_by_track_ids, cursor)
       if len(requested["L"]) > 0:
         results.append(liked_by_track_ids)
@@ -573,18 +565,16 @@ def filter():
       for artist in requested["R"]:
           cursor = g.conn.execute(
           """
-          SELECT S.track_id AS id
-          FROM saved_to S, existing_user_playlists E  
-          WHERE E.username=%s AND E.id = S.existing_playlist_id
-          INTERSECT
-          SELECT I.track_id 
+          SELECT I.track_id AS id
           FROM Is_On I  
           WHERE I.artist_id=%s
-          """, session['username'], artist)
+          """, artist)
           update_set( artist_track_ids, cursor)
       if len(requested["R"]) > 0:
         results.append( artist_track_ids)
       
+      print(artist_track_ids)
+      print("here")
       #moods
       mood_track_ids = set()
       for mood in requested["M"]:
@@ -607,14 +597,10 @@ def filter():
       for genre in requested["G"]:
           cursor = g.conn.execute(
           """
-          SELECT S.track_id AS id
-          FROM saved_to S, existing_user_playlists E  
-          WHERE E.username=%s AND E.id = S.existing_playlist_id
-          INTERSECT
-          SELECT O.track_id
+          SELECT O.track_id AS id
           FROM Is_In I, Is_On O
           WHERE I.genre=%s AND I.artist_id=O.artist_id
-          """, session['username'], genre)
+          """, genre)
           update_set(genre_track_ids, cursor)
       if len(requested["G"]) > 0:
         results.append(genre_track_ids)
@@ -623,34 +609,35 @@ def filter():
       track_ids = set()
       #if nothing selected, show all tracks on user's stored playlists 
       
-      if len(results) == 0:
-        cursor = g.conn.execute(
-          """
-          SELECT S.track_id AS id
-          FROM saved_to S, existing_user_playlists E  
-          WHERE E.username=%s
-          """, session['username'])
-        update_set(track_ids, cursor)
+      # if len(results) == 0:
+      #   cursor = g.conn.execute(
+      #     """
+      #     SELECT S.track_id AS id
+      #     FROM Tracks T  
+      #     WHERE E.username=%s
+      #     LIMIT 1000
+      #     """, session['username'])
+      #   update_set(track_ids, cursor)
       if len(results) > 0:
         track_ids = results.pop()
       for r in results:
         track_ids = track_ids.intersection(r)
-      
+      print(track_ids)
       #do sql query on each track id to get track name and artists 
-      
+      #300 tracks max for reasonable response times
       for id in track_ids:
         cursor = g.conn.execute(
         """
         SELECT DISTINCT T.name, T.id, A.name AS artist
         FROM Is_On I, Artists A, tracks T
         WHERE T.id=%s AND I.artist_id = A.id AND T.id=I.track_id 
-        ORDER BY T.name
+        LIMIT 200
         """, id)
         update_tracks(cursor, tracks)
     else:
       return redirect("/logout")
-  except Exception:
-    pass
+  except Exception as e:
+    print(e)
   return tracks
 
 def update_set(set, cursor):

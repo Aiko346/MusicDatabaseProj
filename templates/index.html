@@ -13,7 +13,7 @@
   <p><a href="logout">Logout</a></p>
   <p><a href="fill-home">Get data from Spotify.</a> Will only add data, not remove anything.</p>
 
-  <div id="tracks">
+  <div id="tracks" style='max-height: 1000px; overflow-y:auto'>
   {% for n in tracks %}
   <p id="{{ n.id }}">{{ tracks[n].name }} - {% for a in tracks[n].artist %} {{ a }} {% endfor %}</p>
   {% endfor %}

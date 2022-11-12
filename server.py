@@ -7,8 +7,6 @@ from typing import ItemsView
 import requests
 # import json
 from spotipy.oauth2 import SpotifyOAuth
-import urllib
-import base64
 import spotipy
 import spotipy.util as util
 from flask_debugtoolbar import DebugToolbarExtension
@@ -307,7 +305,7 @@ def fill_home():  # put data from spotify into SQL
     return redirect("/logout")
 
   try:
-    playlist_info = sp.current_user_playlists(limit=2, offset=10)  # 2 to keep time manageable
+    playlist_info = sp.current_user_playlists(limit=2, offset=0)  # 2 to keep time manageable
   except Exception:
     return redirect("/get-data")
   

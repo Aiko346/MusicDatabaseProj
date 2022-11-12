@@ -48,37 +48,37 @@
       <input type="radio" id="genre" name="filter_option" value="genre">
       <label for="genre">Genre</label><br>
     </fieldset>
-    <fieldset id="album-options">
+    <fieldset id="album-options" style='height: 300px; overflow-y:auto'>
       {% for n in album_options %}
       <input type="checkbox" id="{{ n.id }}" name="{{ 'B' ~ loop.index }}" value="{{ n.id }}">
       <label for="{{ n.id }}">{{ n["name"] }}</label><br>
       {% endfor %}
     </fieldset>
-    <fieldset id="liked-by-options">
+    <fieldset id="liked-by-options" style='height: 300px; overflow-y:auto'>
       {% for n in liked_by_options %}
       <input type="checkbox" id="{{ n.id }}" name="{{ 'L' ~ loop.index }}" value="{{ n.id }}">
       <label for="{{ n.id }}">{{ n["name"] }}</label><br>
       {% endfor %}
     </fieldset>
-    <fieldset id="playlist-options"> 
+    <fieldset id="playlist-options" style='height: 300px; overflow-y:auto'> 
       {% for n in playlist_options %}
       <input type="checkbox" id="{{ n.id }}" name="{{ 'P' ~ loop.index }}" value="{{ n.id }}">
       <label for="{{ n.id }}">{{ n["name"] }}</label><br>
       {% endfor %}
     </fieldset>
-    <fieldset id="artist-options">
+    <fieldset id="artist-options" style='height: 300px; overflow-y:auto'>
       {% for n in artist_options %}
       <input type="checkbox" id="{{ n.id }}" name="{{ 'R' ~ loop.index }}" value="{{ n.id }}">
       <label for="{{ n.id }}">{{ n["name"] }}</label><br>
       {% endfor %}
     </fieldset>
-    <fieldset id="mood-options">
+    <fieldset id="mood-options" style='height: 300px; overflow-y:auto'>
       {% for n in mood_options %}
       <input type="checkbox" id="{{ n.name }}" name="{{ 'M' ~ loop.index }}" value="{{ n.name }}">
       <label for="{{ n.name }}">{{ n["name"] }}</label><br>
       {% endfor %}
     </fieldset>
-    <fieldset id="genre-options">
+    <fieldset id="genre-options" style='height: 300px; overflow-y:auto'>
       {% for n in genre_options %}
       <input type="checkbox" id="{{ n.name }}" name="{{ 'G' ~ loop.index }}" value="{{ n.name }}">
       <label for="{{ n.name }}">{{ n["name"] }}</label><br>
@@ -126,8 +126,9 @@
         });
        
       });
-      
     });
+
+
   </script>
 
 </body>

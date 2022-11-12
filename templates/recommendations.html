@@ -1,0 +1,29 @@
+<html>
+
+<body>
+    <p>Get spotify recommendations for the below mood:</p>
+    <form method="POST" action="/new-playlist" id="filtering-form">
+        <div style='height: 300px; overflow-y:auto'>
+            {% for n in moods %}
+            <input type="checkbox" id="{{ n}}" name="{{ loop.index }}" value="{{ n }}">
+            <label for="{{ loop.index }}">{{ n }}</label><br>
+            {% endfor %}
+        </div>
+    </form>
+
+
+    <form method="POST" action="/new-playlist" id="filtering-form">
+        <p>Add the retrieved songs to the database.</p>
+        <fieldset>
+            <legend>Songs</legend>
+            {% for n in tracks %}
+            <input type="checkbox" id="{{ n }}" name="{{ n }}" value="{{ n }}">
+            <label for="{{ n }}">{{ tracks[n].name }} / {% for a in tracks[n].artist %} {{ a }} | {% endfor %}</label><br>
+            {% endfor %}
+        </fieldset>
+        <input type="submit" value="Add recommendations">
+
+    </form>
+</body>
+
+</html>

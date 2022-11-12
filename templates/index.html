@@ -13,10 +13,10 @@
   <p><a href="logout">Logout</a></p>
   <p><a href="fill-home">Get data from Spotify.</a> Will only add data, not remove anything.</p>
 
-  <div id="tracks" style='max-height: 1000px; overflow-y:auto'>
-  {% for n in tracks %}
-  <p id="{{ n.id }}">{{ tracks[n].name }} - {% for a in tracks[n].artist %} {{ a }} {% endfor %}</p>
-  {% endfor %}
+  <div id="tracks" style='max-height: 800px; overflow-y:auto'>
+    {% for n in tracks %}
+    <p class="track" id="{{ n }}">{{ tracks[n].name }} / {% for a in tracks[n].artist %} {{ a }} | {% endfor %}</p>
+    {% endfor %}
   </div>
 
   <p>Add a friend</p>
@@ -29,9 +29,10 @@
   <p><a href="get-data">Login</a></p>
   <p><a href="register">Register</a></p>
   {% endif %}
- 
+
   <p>Intersection of results between filtering options, union of results within filering options</p>
-  <p>i.e. "Alice" and "Bob" and "Hold the Girl" shows all songs on your playlists by (Alice OR Bob) AND on "Hold the Girl"</p>
+  <p>i.e. "Alice" and "Bob" and "Hold the Girl" shows all songs on your playlists by (Alice OR Bob) AND on "Hold the
+    Girl"</p>
   <form method="POST" action="/" id="filtering-form">
     <fieldset>
       <legend>Filtering Options</legend>
@@ -60,7 +61,7 @@
       <label for="{{ n.id }}">{{ n["name"] }}</label><br>
       {% endfor %}
     </fieldset>
-    <fieldset id="playlist-options" style='height: 300px; overflow-y:auto'> 
+    <fieldset id="playlist-options" style='height: 300px; overflow-y:auto'>
       {% for n in playlist_options %}
       <input type="checkbox" id="{{ n.id }}" name="{{ 'P' ~ loop.index }}" value="{{ n.id }}">
       <label for="{{ n.id }}">{{ n["name"] }}</label><br>
@@ -87,7 +88,9 @@
     <input type="submit" value="Submit">
   </form>
 
-  <p>Make a new playlist with these songs</p>
+  <p><a href="recommendations">Get recommendations based on mood</a></p>
+
+  <p>Start building a new playlist to add songs to</p>
   <form method="POST" action="/new-playlist">
     <input type="text" id="playlist-name" name="playlist-name">
     <label for="playlist-name">Name of your new playlist</label><br>
@@ -96,14 +99,37 @@
     <input type="submit" value="Make New Playlist">
   </form>
 
-  <p>Pick an existing New Playlist to add current songs to:</p>
-  <!-- In the server.py file we can take the playlist, read the data variable for the songs,
-  and add them in the sql 
-  -->
-  {% for n in new_playlists %}
-  <input>{{n}}</div>
-  {% endfor %}
-  <p> Pick a playlist to add to your Spotify:</p>
+
+  <form method="POST" action="/add-to-new-playlist" id="filtering-form">
+    <p>Add the retrieved songs to a new playlist:</p>
+    <fieldset>
+      <legend>Created Playlists</legend>
+      {% for n in new_playlists %}
+      <input type="radio" id="{{ loop.index }}" name="new_playlist_option" value="{{ n.len ~ n.description ~ n.name }}">
+      <label for="{{ n.len ~ n.description ~ n.name }}">{n.name} | {n.description}</label><br>
+      {% endfor %}
+    </fieldset>
+
+    <div style="display: none">
+      {% for n in tracks %}
+      <input type="checkbox" id="{{ n.id }}" checked></input>
+      {% endfor %}
+      <input type="text" id="playlist-name" name="playlist-name">
+    </div>
+    <input type="submit" value="Submit">
+  </form>
+
+  <form method="POST" action="/new-tracks" id="filtering-form">
+    <p> Pick a playlist to add to your Spotify:</p>
+    <fieldset>
+      <legend>Created Playlists</legend>
+      {% for n in new_playlists %}
+      <input type="radio" id="{{ loop.index }}" name="new_playlist_option" value="{{ n.len ~ n.description ~ n.name }}">
+      <label for="{{ n.len ~ n.description ~ n.name }}">{n.name} | {n.description}</label><br>
+      {% endfor %}
+    </fieldset>
+  </form>
+
   <!-- current new_playlists here -> when one is added, create it and then remove it from new playlists-->
 
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
@@ -112,19 +138,19 @@
     $(document).ready(function () {
       let options = ["album", "liked-by", "playlist", "artist", "mood", "genre"];
       options.forEach(function (option) {
-        $("#"+option+"-options").hide();
+        $("#" + option + "-options").hide();
       });
       $("#filtering-form").click(function () {
-        options.forEach( function(option) {
-          if ($("#"+option).is(":checked")) {
-          $("#"+option+"-options").show();
-          console.log("checked");
-        } else {
-          $("#"+option+"-options").hide();
-          console.log("unchecked");
-        }
+        options.forEach(function (option) {
+          if ($("#" + option).is(":checked")) {
+            $("#" + option + "-options").show();
+            console.log("checked");
+          } else {
+            $("#" + option + "-options").hide();
+            console.log("unchecked");
+          }
         });
-       
+
       });
     });
 

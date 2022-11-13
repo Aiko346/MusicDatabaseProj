@@ -12,7 +12,7 @@
   {% if 'username' in session %}
   <p><a href="logout">Logout</a></p>
   <p><a href="fill-home">Get data from Spotify.</a> Will only add data, not remove anything.</p>
-
+  <p><a href="recommendations">Get recommendations based on mood</a></p>
   <div id="tracks" style='max-height: 800px; overflow-y:auto'>
     {% for n in tracks %}
     <p class="track" id="{{ n }}">{{ tracks[n].name }} / {% for a in tracks[n].artist %} {{ a }} | {% endfor %}</p>
@@ -30,9 +30,10 @@
   <p><a href="register">Register</a></p>
   {% endif %}
 
-  <p>Intersection of results between filtering options, union of results within filering options</p>
-  <p>i.e. "Alice" and "Bob" and "Hold the Girl" shows all songs on your playlists by (Alice OR Bob) AND on "Hold the
+  <p>Intersection of results between filtering options, union of results within filtering options</p>
+  <p>i.e. "Alice" and "Bob" and "Hold the Girl" shows all songs in the database by (Alice OR Bob) AND on "Hold the
     Girl"</p>
+  <p>Filtering options are all taken from your existing playlists or new Recommendations playlist.</p>
   <form method="POST" action="/" id="filtering-form">
     <fieldset>
       <legend>Filtering Options</legend>
@@ -41,7 +42,7 @@
       <input type="radio" id="liked-by" name="filter_option" value="liked-by">
       <label for="liked-by">Liked By</label><br>
       <input type="radio" id="playlist" name="filter_option" value="playlist">
-      <label for="playlist">Playlist</label><br>
+      <label for="playlist">Existing Playlist</label><br>
       <input type="radio" id="artist" name="filter_option" value="artist">
       <label for="artist">Artist</label><br>
       <input type="radio" id="mood" name="filter_option" value="mood">
@@ -88,7 +89,7 @@
     <input type="submit" value="Submit">
   </form>
 
-  <p><a href="recommendations">Get recommendations based on mood</a></p>
+  
 
   <p>Start building a new playlist to add songs to</p>
   <form method="POST" action="/new-playlist">

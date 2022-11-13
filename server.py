@@ -10,6 +10,7 @@ from spotipy.oauth2 import SpotifyOAuth
 import spotipy
 import spotipy.util as util
 from flask_debugtoolbar import DebugToolbarExtension
+from datetime import date
 
 app = Flask(__name__)
 client_id = "67bdc4b1d4d74f5d88cdab031fee6a41"
@@ -145,29 +146,37 @@ def index():
                 liked_by_options.append(
                     {'name': result['name'], 'id': result['id']})
 
-            # all albums associated with tracks on one of the user's existing playlists
+            # all albums associated with tracks on one of the user's existing playlists or Recommendations
             cursor = g.conn.execute(
                 """
       SELECT DISTINCT A.name, A.id
       FROM Released_On R, Tracks T, Albums A, Saved_To S, existing_user_playlists E
-      WHERE A.id=R.album_id AND R.track_id=S.track_id AND S.existing_playlist_id=E.id
-      AND E.username=%s
-      ORDER BY A.name
-      """, session['username'])
+      WHERE A.id=R.album_id AND R.track_id=S.track_id AND S.existing_playlist_id=E.id AND E.username=%s
+      UNION
+      SELECT DISTINCT A.name, A.id
+      FROM Released_On R, Tracks T, Albums A, Added_To AD
+      WHERE A.id=R.album_id AND
+      AD.track_id=R.track_id AND AD.new_playlist_username=%s AND AD.new_playlist_name=%s AND AD.new_playlist_description=%s
+      ORDER BY name
+      """, session['username'], session['username'], "Recommendations", "")
             for result in cursor:
                 # can also be accessed using result[0]
                 album_options.append(
                     {'name': result['name'], 'id': result['id']})
 
-            # all artists associated with tracks on one of the user's existing playlists
+            # all artists associated with tracks on one of the user's existing playlists or Recommendations
             cursor = g.conn.execute(
                 """
       SELECT DISTINCT A.name, A.id
       FROM Is_On I, Tracks T, Artists A, Saved_To S, existing_user_playlists E
       WHERE A.id=I.artist_id AND I.track_id=S.track_id AND S.existing_playlist_id=E.id
       AND E.username=%s
-      ORDER BY A.name
-      """, session['username'])
+      UNION
+      SELECT DISTINCT A.name, A.id
+      FROM Is_On I, Tracks T, Artists A, Added_To AD
+      WHERE A.id=I.artist_id AND AD.track_id=I.track_id AND AD.new_playlist_username=%s AND AD.new_playlist_name=%s AND AD.new_playlist_description=%s
+      ORDER BY name
+      """, session['username'], session['username'], "Recommendations", "")
             for result in cursor:
                 # can also be accessed using result[0]
                 artist_options.append(
@@ -193,17 +202,22 @@ def index():
             cursor = g.conn.execute(
                 """
       SELECT DISTINCT I.genre
-      FROM Genres G, existing_user_playlists E, Saved_To S, Is_In I, Is_On O
+      FROM existing_user_playlists E, Saved_To S, Is_In I, Is_On O
       WHERE I.artist_id=O.artist_id AND O.track_id=S.track_id AND S.existing_playlist_id=E.id
-      AND E.username=%s
-      ORDER BY I.genre
-      """, session['username'])
+      AND E.username=%s 
+      UNION
+      SELECT DISTINCT I.genre
+      FROM Saved_To S, Is_In I, Is_On O, Added_To AD
+      WHERE I.artist_id=O.artist_id AND AD.track_id=O.track_id AND AD.new_playlist_username=%s AND AD.new_playlist_name=%s AND AD.new_playlist_description=%s
+      ORDER BY genre
+      """, session['username'], session['username'], "Recommendations", "")
             for result in cursor:
                 # can also be accessed using result[0]
                 genre_options.append({'name': result['genre']})
             cursor.close()
-        except Exception:
-            print("Problem getting user data")
+        except Exception as e:
+            print(e)
+            return redirect("/logout")
 
     #
     # Flask uses Jinja templates, which is an extension to HTML where you can
@@ -243,27 +257,6 @@ def index():
     #
     return render_template("index.html", **context)
 
-#
-# This is an example of a different path.  You can see it at:
-#
-#     localhost:8111/another
-#
-# Notice that the function name is another() rather than index()
-# The functions for each app.route need to have different names
-#
-# @app.route('/another')
-# def another():
-#   return render_template("another.html")
-
-# Example of adding new data to the database
-
-
-@app.route('/add', methods=['POST'])
-def add():
-    name = request.form['name']
-    g.conn.execute('INSERT INTO test(name) VALUES (%s)', name)
-    return redirect('/')
-
 
 @app.route('/logout')
 def logout():
@@ -271,31 +264,188 @@ def logout():
     return redirect('/')
 
 
-@app.route('/recommendations')
+@app.route('/recommendations', methods=["POST", "GET"])
 def recommendations():
     moods = []
-    if "username" in session:
+    tracks = set()
+    recommendations = {}
+    if request.method == 'POST':
         try:
-           # all moods from this user
+            sp = spotipy.Spotify(auth=session["access_token"])
+            redirect_uri = "http://localhost:8111/data-processing"
+            auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
+                session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
+
+            if not auth.validate_token(auth.get_cached_token()):
+                print("not valid?")
+                auth.refresh_access_token(
+                    auth.get_cached_token()["refresh_token"])
+                if not auth.validate_token(auth.get_cached_token()):
+                    print("refresh failed")
+                    return redirect("/logout")
+        except Exception as e:
+            print(e)
+            return redirect("/logout")
+        try:
+            if "username" in session:
+                # for each mood get tracks in database for it
+                for mood in request.form.keys():
+                    m = request.form[mood]
+                    cursor = g.conn.execute(
+                        """
+                        SELECT DISTINCT T.id
+                        FROM tracks T 
+                        WHERE T.id = 
+                        ANY(SELECT M.track_id 
+                        FROM Assigned_Mood_To M 
+                        WHERE M.mood=%s AND M.username=%s)
+                        OR T.id = 
+                        ANY(SELECT R.track_id 
+                        FROM Released_On R, Albums A, Assigned_Mood_To2 M
+                        WHERE R.album_id=A.id AND A.id=M.album_id AND M.mood=%s AND M.username=%s
+                        )
+                        LIMIT 10
+                        """, m, session["username"], m, session["username"])
+                    for result in cursor:
+                        tracks.add(result["id"])
+                # get recommendations for each track
+                # print(tracks)
+
+                try:
+                    recs = sp.recommendations(seed_tracks=tracks)
+                except Exception as e:
+                    return redirect("/logout")
+
+                if "tracks" in recs:
+                    # add each track to new_playlist Recommendations
+                    try:
+                        g.conn.execute(
+                            '''INSERT INTO New_User_Playlists (name, description, username, date_created) VALUES 
+                        (%s, %s, %s, %s)''',
+                            "Recommendations", "", session["username"], date.today().strftime("%Y-%m-%d"))
+                    except Exception:  # may already exist
+                        pass
+
+                    for r in recs["tracks"]:
+                        try:
+                            try:
+                                d = r["album"]["release_date"]
+                                if len(d) == 4:
+                                    d = d + "-01-01" 
+                                g.conn.execute(
+                                    '''INSERT INTO Tracks (id, name, popularity, duration, release_date) VALUES 
+                        (%s, %s, %s, %s, %s)''',
+                                    r["id"], r["name"], r["popularity"], r["duration_ms"], d)
+                              
+                                recommendations[r["id"]] = {
+                                    "artist": [], "name": r["name"]}
+                                for artist in r["artists"]:
+                                    recommendations[r["id"]]["artist"].append(
+                                        artist["name"])
+                                #print(r)
+                            except Exception as e:
+                                print(e)
+                            try:
+                                g.conn.execute(
+                                    '''INSERT INTO Added_To (track_id, new_playlist_name, new_playlist_description, new_playlist_username, date_added) VALUES 
+                                (%s, %s, %s, %s, %s)''',
+                                    r["id"], "Recommendations", "", session["username"], date.today().strftime("%Y-%m-%d"))
+                            except Exception as e:
+                                print(e)
+                            
+                            try:
+                                # albums
+                                if r["album"]["album_type"] == "album":
+                                    g.conn.execute(
+                                        '''INSERT INTO Albums (id, name, release_date) VALUES  
+                                (%s, %s, %s)''',
+                                        r["album"]["id"], r["album"]["name"], r["album"]["release_date"])
+                            except Exception as e:
+                                print(e)
+
+                                # artists of track
+                            for artist in r["artists"]:
+                                artist_data = sp.artist(artist["id"])
+                                print(artist)
+                                try:
+                                    # Artists
+                                    g.conn.execute(
+                                        '''INSERT INTO Artists (id, name, popularity) VALUES     
+                            (%s, %s, %s)''', artist["id"], artist["name"], artist_data["popularity"])
+                                except Exception as e:
+                                    print(e)
+
+                                try:
+                                    collaboration = "FALSE"
+                                    if len(r["artists"]) > 1:
+                                        collaboration = "TRUE"
+
+                                    g.conn.execute(
+                                        '''INSERT INTO Is_On (artist_id, track_id, collaboration) VALUES  
+                            (%s, %s, %s)''', artist["id"], r["id"], collaboration)
+                                except Exception as e:
+                                    print(e)
+
+                                for genre in artist_data["genres"]:
+                                    # Genres
+                                    try:
+                                        g.conn.execute(
+                                            '''INSERT INTO Genres (genre) VALUES   
+                                (%s)''', genre)
+                                    except Exception as e:
+                                        print(e)
+
+                                    try:
+                                        g.conn.execute(
+                                            '''INSERT INTO Is_In (artist_id, genre) VALUES    
+                                (%s, %s)''', artist["id"], genre)
+                                    except Exception as e:
+                                        print(e)
+
+                                if r["album"]["album_type"] == "album":
+                                    album_by_artist = "FALSE"
+
+                                    for album_artist in r["album"]["artists"]:
+                                        if album_artist["id"] == artist["id"]:
+                                            album_by_artist = "TRUE"
+
+                                    try:
+                                        g.conn.execute(
+                                            '''INSERT INTO released_on (artist_id, track_id, album_id, album_by_artist) VALUES  
+                                (%s, %s, %s, %s)''', artist["id"], r["id"], r["album"]["id"], album_by_artist)
+                                    except Exception as e:
+                                        print(e)
+                        except Exception as e:
+                            print(e)
+            else:
+                return redirect("/logout")
+        except Exception as e:
+            print(e)
+            return redirect("/")
+
+    try:
+        if "username" in session:
+            # all moods from this user
             cursor = g.conn.execute(
                 """
-      SELECT DISTINCT M.mood as name
-      FROM assigned_Mood_To M
-      WHERE M.username=%s
-      UNION
-      SELECT DISTINCT M.mood as name
-      FROM assigned_Mood_To2 M
-      WHERE M.username=%s
-      ORDER BY name
-      """, session['username'], session['username'])
+                    SELECT DISTINCT M.mood as name
+                    FROM assigned_Mood_To M
+                    WHERE M.username=%s
+                    UNION
+                    SELECT DISTINCT M.mood as name
+                    FROM assigned_Mood_To2 M
+                    WHERE M.username=%s
+                    ORDER BY name
+                    """, session['username'], session['username'])
             for result in cursor:
                 moods.append(result["name"])
-            context = dict(moods=moods)
+            context = dict(moods=moods, tracks=recommendations)
             return render_template('recommendations.html', **context)
-        except Exception as e:
-            return redirect("/")
-    else:
-        return redirect("/logout")
+        else:
+            return redirect("/logout")
+    except Exception as e:
+        print(e)
+        return redirect("/")
 
 
 @app.route('/get-data')
@@ -558,7 +708,7 @@ def filter():
             for option in request.form.keys():
                 if option[0] in requested.keys():
                     requested[option[0]].append(request.form[option])
-            print(requested)
+            #print(requested)
             # albums
             album_track_ids = set()
             for album in requested["B"]:
@@ -611,7 +761,7 @@ def filter():
             if len(requested["R"]) > 0:
                 results.append(artist_track_ids)
 
-            print(artist_track_ids)
+            #print(artist_track_ids)
             print("here")
             # moods
             mood_track_ids = set()
@@ -660,7 +810,7 @@ def filter():
                 track_ids = results.pop()
             for r in results:
                 track_ids = track_ids.intersection(r)
-            print(track_ids)
+            #print(track_ids)
             # do sql query on each track id to get track name and artists
             # 300 tracks max for reasonable response times
             for id in track_ids:

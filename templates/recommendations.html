@@ -1,29 +1,25 @@
 <html>
 
 <body>
+    <p><a href="/">Home</a></p>
     <p>Get spotify recommendations for the below mood:</p>
-    <form method="POST" action="/new-playlist" id="filtering-form">
-        <div style='height: 300px; overflow-y:auto'>
+    <form method="POST" action="/recommendations" >
+        <fieldset style='height: 300px; overflow-y:auto'>
             {% for n in moods %}
-            <input type="checkbox" id="{{ n}}" name="{{ loop.index }}" value="{{ n }}">
+            <input type="checkbox" id="{{ n }}" name="{{ loop.index }}" value="{{ n }}">
             <label for="{{ loop.index }}">{{ n }}</label><br>
             {% endfor %}
-        </div>
-    </form>
-
-
-    <form method="POST" action="/new-playlist" id="filtering-form">
-        <p>Add the retrieved songs to the database.</p>
-        <fieldset>
-            <legend>Songs</legend>
-            {% for n in tracks %}
-            <input type="checkbox" id="{{ n }}" name="{{ n }}" value="{{ n }}">
-            <label for="{{ n }}">{{ tracks[n].name }} / {% for a in tracks[n].artist %} {{ a }} | {% endfor %}</label><br>
-            {% endfor %}
         </fieldset>
-        <input type="submit" value="Add recommendations">
-
+        <input type="submit" value="Get recommendations">
     </form>
+
+    <p>The below are now in the database on a new playlist called "Recommendations".</p>
+    <div id="tracks" style='max-height: 800px; overflow-y:auto'>
+        {% for n in tracks %}
+        <p class="track" id="{{ n }}">{{ tracks[n].name }} / {% for a in tracks[n].artist %} {{ a }} | {% endfor %}</p>
+        {% endfor %}
+    </div>
+   
 </body>
 
 </html>

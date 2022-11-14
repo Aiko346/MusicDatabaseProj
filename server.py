@@ -806,6 +806,7 @@ def filter():
             #     LIMIT 1000
             #     """, session['username'])
             #   update_set(track_ids, cursor)
+
             if len(results) > 0:
                 track_ids = results.pop()
             for r in results:
@@ -865,6 +866,72 @@ def new_playlist():
     #   session['playlist'].append(name)
     return redirect('/')
 
+# turn filtered tracks into new playlist
+@app.route('/filter', methods=["POST", "GET"])
+def filtered_playlist():
+
+    if request.method == 'POST':
+        try:
+            if "username" in session:
+
+                # get filtered songs
+                filtered = filter()
+
+                new_playlist_name = request.form['playlist-name']
+                new_playlist_description = request.form['playlist-description']
+
+                if "tracks" in filtered:
+                    # add each track to new_playlist Recommendations
+                    try:                    
+                        g.conn.execute(
+                            '''INSERT INTO New_User_Playlists (name, description, username, date_created) VALUES 
+                        (%s, %s, %s, %s)''', new_playlist_name, new_playlist_description, session["username"], date.today().strftime("%Y-%m-%d"))
+                    except Exception:  # may already exist
+                        pass
+
+                    for t in filtered["tracks"]:
+                        try:
+                            g.conn.execute(
+                                '''INSERT INTO Added_To (track_id, new_playlist_name, new_playlist_description, new_playlist_username, date_added) VALUES 
+                                (%s, %s, %s, %s, %s)''', t["id"], new_playlist_name, new_playlist_description, session["username"], date.today().strftime("%Y-%m-%d"))
+                        except Exception as e:
+                            print(e)
+        except Exception as e:
+            print(e)
+
+# assign mood to song
+@app.route('/mood', methods=["POST", "GET"])
+def add_mood():
+    if request.method == 'POST':
+        try:
+            if "username" in session:
+
+                # get track mood
+                for track in request.form.keys():
+                    tr = request.form[track]
+                    tr_m = request.form['track_mood']
+                    if tr_m:
+                        try:                    
+                            g.conn.execute(
+                                '''INSERT INTO Assigned_Mood_To (track_id, username, mood) VALUES 
+                            (%s, %s, %s)''', tr["id"], session["username"], tr_m)
+                        except Exception:  # may already exist
+                            pass
+
+                # get album mood
+                for album in request.form.keys():
+                    alb = request.form[album]
+                    alb_m = request.form['album_mood']
+                    if alb_m:
+                        try:                    
+                            g.conn.execute(
+                                '''INSERT INTO Assigned_Mood_To2 (album_id, username, mood) VALUES 
+                            (%s, %s, %s)''', alb["id"], session["username"], alb_m)
+                        except Exception:  # may already exist
+                            pass
+
+        except Exception as e:
+            print(e)
 
 if __name__ == "__main__":
     import click

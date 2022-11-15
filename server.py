@@ -988,7 +988,40 @@ def playlist_to_spotify():
                 print(e)
                 return redirect("/logout")
 
-# assign mood to song
+# assign mood to filtered tracks
+@app.route('/mood-to-filtered', methods=["POST", "GET"])
+def add_mood_to_filtered():
+
+    if request.method == 'POST':
+        try:
+            if "username" in session:
+
+                # get album mood
+                for track in request.form["checked-tracks"]:
+                    sel_mood = request.form["selected-mood"]
+                    
+                    if sel_mood:
+                        try:                  
+                            g.conn.execute(
+                            '''INSERT INTO Assigned_Mood_To (track_id, username, mood) VALUES 
+                            (%s, %s, %s)''', track, session["username"], sel_mood)
+                        except Exception:  # may already exist
+                            pass
+
+                    else:
+                        add_mood = request.form["added-mood"]
+                        if add_mood:
+                            try:   
+                                g.conn.execute(
+                                '''INSERT INTO Assigned_Mood_To (track_id, username, mood) VALUES 
+                                (%s, %s, %s)''', track, session["username"], add_mood)
+                            except Exception:  # may already exist
+                                pass
+
+        except Exception as e:
+            print(e)
+            
+# assign mood to albums
 @app.route('/mood-to-albums', methods=["POST", "GET"])
 def add_album_mood():
 

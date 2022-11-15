@@ -90,44 +90,57 @@
   </form>
 
   
+  <p>Choose mood(s) for selected songs</p>
+  <form method="POST" action="/add-mood">
+    <fieldset style='height: 300px; overflow-y:auto'>
+      {% for n in mood_options %}
+      <input type="checkbox" id="{{ n }}" name="{{ selected-mood }}" value="{{ n }}">
+      <label for="{{ n.name }}">{{ n["name"] }}</label><br>
+      {% endfor %}
+    </fieldset>
+    <input type="text" id="added-mood" name="added-mood">
+    <label for="added-mood">Create and assign a new mood</label><br>
+    <input type="submit" value="Assign Mood">
+  </form>
+
 
   <p>Start building a new playlist to add songs to</p>
-  <form method="POST" action="/new-playlist">
+  <form method="POST" action="/create-new-playlist">
     <input type="text" id="playlist-name" name="playlist-name">
     <label for="playlist-name">Name of your new playlist</label><br>
     <textarea id="playlist-description" name="playlist-description" rows="4" cols="50"></textarea>
     <label for="playlist-description">Description of your new playlist</label><br>
-    <input type="submit" value="Make New Playlist">
+    <input type="submit" value="Create New Playlist">
   </form>
 
-
-  <form method="POST" action="/add-to-new-playlist" id="filtering-form">
+  <form method="POST" action="/filtered-to-new-playlist" id="filtering-form">
     <p>Add the retrieved songs to a new playlist:</p>
     <fieldset>
       <legend>Created Playlists</legend>
       {% for n in new_playlists %}
-      <input type="radio" id="{{ loop.index }}" name="new_playlist_option" value="{{ n.len ~ n.description ~ n.name }}">
+      <input type="radio" id="{{ loop.index }}" name="selected-new-playlist" value="{{ n.len ~ n.description ~ n.name }}">
       <label for="{{ n.len ~ n.description ~ n.name }}">{n.name} | {n.description}</label><br>
       {% endfor %}
     </fieldset>
 
     <div style="display: none">
       {% for n in tracks %}
-      <input type="checkbox" id="{{ n.id }}" checked></input>
+      <input type="checkbox" id="{{ n.id }}" name="checked-tracks" checked></input>
       {% endfor %}
       <input type="text" id="playlist-name" name="playlist-name">
     </div>
-    <input type="submit" value="Submit">
+    <input type="submit" value="Add To New Playlist">
   </form>
 
-  <form method="POST" action="/new-tracks" id="filtering-form">
+  <form method="POST" action="/new-playlist-to-spotify" id="filtering-form">
     <p> Pick a playlist to add to your Spotify:</p>
     <fieldset>
       <legend>Created Playlists</legend>
       {% for n in new_playlists %}
-      <input type="radio" id="{{ loop.index }}" name="new_playlist_option" value="{{ n.len ~ n.description ~ n.name }}">
+      <input type="radio" id="{{ loop.index }}" name="new-spotify-playlist" value="{{ n.len ~ n.description ~ n.name }}">
       <label for="{{ n.len ~ n.description ~ n.name }}">{n.name} | {n.description}</label><br>
       {% endfor %}
+      <input type="submit" value="Add New Playlist To Spotify">
     </fieldset>
   </form>
 

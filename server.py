@@ -321,7 +321,7 @@ def recommendations():
                     try:
                         g.conn.execute(
                             '''INSERT INTO New_User_Playlists (name, description, username, date_created) VALUES 
-                        (%s, %s, %s, %s)''',
+                            (%s, %s, %s, %s)''',
                             "Recommendations", "", session["username"], date.today().strftime("%Y-%m-%d"))
                     except Exception:  # may already exist
                         pass
@@ -624,6 +624,15 @@ def add_friend():
         sp = spotipy.Spotify(auth=session["access_token"])
         user_info = sp.user(request.form["friend-id"])
         display_name = user_info["display_name"]
+        
+        try:
+            g.conn.execute(
+            """INSERT INTO Is_Friends_With (friend_id, username) VALUES 
+            (%s, %s)""",
+            request.form["friend-id"], session["username"])
+        except Exception as e:
+            print(e)
+
         user_playlist_info = sp.user_playlists(
             request.form["friend-id"], limit=2)  # 5 max
         print(user_playlist_info)
@@ -632,12 +641,38 @@ def add_friend():
             user_playlist_ids.append(item["uri"])
         # add display_name to sql
         for uri in user_playlist_ids:
-            tracks = sp.user_playlist_tracks(
+            friend_tracks = sp.user_playlist_tracks(
                 request.form["friend-id"], uri[17:])
-            print(tracks)
-            # limit at 100 per playlist due to speed
-            # check if tracks in Tracks for user already, if so create Liked_By relationship
-        print()
+            #print(friend_tracks)
+        
+        # limit at 100 per playlist due to speed
+        # check if tracks in Tracks for user already, if so create Liked_By relationship
+        usr_tracks = set()
+
+        if len(friend_tracks) > 0:
+
+            cursor = g.conn.execute(
+                """SELECT S.track_id AS id
+                FROM Tracks T
+                WHERE E.username=%s
+                LIMIT 1000
+                """, session['username'])
+            update_set(usr_tracks, cursor)
+
+            for t in friend_tracks:
+                if t in usr_tracks:
+                    try:
+                        g.conn.execute(
+                            """INSERT INTO Liked_By (track_id, friend_id) VALUES 
+                            (%s, %s)""",
+                            t["id"], request.form["friend-id"])
+                    except Exception as e:
+                        print(e)
+
+        #print(track_ids)
+        # do sql query on each track id to get track name and artists
+        # 300 tracks max for reasonable response times
+
 
     #    # c = sp.current_user_playlists(limit = 10)
     # # for item in c["items"]:
@@ -844,12 +879,13 @@ def update_tracks(cursor, tracks):
                 'name': result['name'], 'artist': [result['artist']]}
 
 
-@app.route('/new-playlist', methods=['POST'])
+@app.route('/create-new-playlist', methods=['POST'])
 def new_playlist():
     name = request.form['playlist-name']
     description = request.form['playlist-description']
     g.conn.execute(
-        'INSERT INTO new_playlists(name, description) VALUES (%s, %s)', name, description)
+        """INSERT INTO New_User_Playlists (name, description, username, date_created) VALUES 
+        (%s, %s, %s, %s)""", name, description, session["username"], date.today().strftime("%Y-%m-%d"))
     print("testing new_playlist()")
     # if 'playlist' in session:
     #   print("%s test", name)
@@ -867,37 +903,89 @@ def new_playlist():
     return redirect('/')
 
 # turn filtered tracks into new playlist
-@app.route('/filter', methods=["POST", "GET"])
-def filtered_playlist():
+@app.route('/filtered-to-new-playlist', methods=['POST'])
+def filtered_to_playlist():
 
     if request.method == 'POST':
         try:
             if "username" in session:
 
-                # get filtered songs
-                filtered = filter()
+                if 'Add New Playlist To Spotify' in request.form:
 
-                new_playlist_name = request.form['playlist-name']
-                new_playlist_description = request.form['playlist-description']
+                    new_playlist = request.form['new_playlist_option']
+                    if new_playlist:
 
-                if "tracks" in filtered:
-                    # add each track to new_playlist Recommendations
-                    try:                    
-                        g.conn.execute(
-                            '''INSERT INTO New_User_Playlists (name, description, username, date_created) VALUES 
-                        (%s, %s, %s, %s)''', new_playlist_name, new_playlist_description, session["username"], date.today().strftime("%Y-%m-%d"))
-                    except Exception:  # may already exist
-                        pass
+                        name = new_playlist["name"]
+                        description = new_playlist["description"]
 
-                    for t in filtered["tracks"]:
-                        try:
-                            g.conn.execute(
-                                '''INSERT INTO Added_To (track_id, new_playlist_name, new_playlist_description, new_playlist_username, date_added) VALUES 
-                                (%s, %s, %s, %s, %s)''', t["id"], new_playlist_name, new_playlist_description, session["username"], date.today().strftime("%Y-%m-%d"))
-                        except Exception as e:
-                            print(e)
+                        for track in request.form["checked-tracks"]:
+                            # add each track to new_playlist
+                            try:
+                                g.conn.execute(
+                                    '''INSERT INTO Added_To (track_id, new_playlist_name, new_playlist_description, new_playlist_username, date_added) VALUES 
+                                    (%s, %s, %s, %s, %s)''', track, name, description, session["username"], date.today().strftime("%Y-%m-%d"))
+                            except Exception as e:
+                                print(e)
         except Exception as e:
             print(e)
+
+    return redirect('/')
+
+# add selected new playlist to spotify
+@app.route('/new-playlist-to-spotify', methods=['POST'])
+def playlist_to_spotify():
+
+    if request.method == 'POST':
+        try:
+            sp = spotipy.Spotify(auth=session["access_token"])
+            redirect_uri = "http://localhost:8111/data-processing"
+            auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
+                session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
+
+            if not auth.validate_token(auth.get_cached_token()):
+                print("not valid?")
+                auth.refresh_access_token(
+                    auth.get_cached_token()["refresh_token"])
+                if not auth.validate_token(auth.get_cached_token()):
+                    print("refresh failed")
+                    return redirect("/logout")
+        except Exception as e:
+            print(e)
+            return redirect("/logout")
+        
+        # 
+        if "username" in session:
+            try:
+
+                new_playlist = request.form['new-spotify-playlist']
+
+                np = sp.user_playlist_create(
+                    session["username"], 
+                    new_playlist["name"], 
+                    public = True, 
+                    description = new_playlist["description"])
+
+                tracks = []
+
+                cursor = g.conn.execute(
+                    """SELECT A.track_id AS id
+                    FROM Added_To A
+                    WHERE A.username=%s AND A.new_playlist_name=%s AND A.new_playlist_description=%s
+                    LIMIT 1000""", 
+                    session['username'], 
+                    new_playlist["name"], 
+                    new_playlist["description"])
+                update_set(tracks, cursor)
+
+                t = sp.user_playlist_add_tracks(
+                    session['username'], 
+                    np, 
+                    tracks, 
+                    position=None)
+           
+            except Exception as e:
+                print(e)
+                return redirect("/logout")
 
 # assign mood to song
 @app.route('/mood', methods=["POST", "GET"])

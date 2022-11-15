@@ -879,6 +879,7 @@ def update_tracks(cursor, tracks):
                 'name': result['name'], 'artist': [result['artist']]}
 
 
+
 @app.route('/create-new-playlist', methods=['POST'])
 def new_playlist():
     name = request.form['playlist-name']
@@ -988,35 +989,34 @@ def playlist_to_spotify():
                 return redirect("/logout")
 
 # assign mood to song
-@app.route('/mood', methods=["POST", "GET"])
-def add_mood():
+@app.route('/mood-to-albums', methods=["POST", "GET"])
+def add_album_mood():
+
     if request.method == 'POST':
         try:
             if "username" in session:
 
-                # get track mood
-                for track in request.form.keys():
-                    tr = request.form[track]
-                    tr_m = request.form['track_mood']
-                    if tr_m:
-                        try:                    
+                # get album mood
+                for album in request.form["select-albums"]:
+                    sel_mood = request.form["select-mood"]
+                    
+                    if sel_mood:
+                        try:                  
                             g.conn.execute(
-                                '''INSERT INTO Assigned_Mood_To (track_id, username, mood) VALUES 
-                            (%s, %s, %s)''', tr["id"], session["username"], tr_m)
+                            '''INSERT INTO Assigned_Mood_To2 (album_id, username, mood) VALUES 
+                            (%s, %s, %s)''', album["id"], session["username"], sel_mood)
                         except Exception:  # may already exist
                             pass
 
-                # get album mood
-                for album in request.form.keys():
-                    alb = request.form[album]
-                    alb_m = request.form['album_mood']
-                    if alb_m:
-                        try:                    
-                            g.conn.execute(
+                    else:
+                        add_mood = request.form["added-mood"]
+                        if add_mood:
+                            try:   
+                                g.conn.execute(
                                 '''INSERT INTO Assigned_Mood_To2 (album_id, username, mood) VALUES 
-                            (%s, %s, %s)''', alb["id"], session["username"], alb_m)
-                        except Exception:  # may already exist
-                            pass
+                                (%s, %s, %s)''', album["id"], session["username"], add_mood)
+                            except Exception:  # may already exist
+                                pass
 
         except Exception as e:
             print(e)

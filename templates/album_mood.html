@@ -13,7 +13,7 @@
             </fieldset>
             <fieldset style='height: 300px; overflow-y:auto'>
                 {% for n in moods %}
-                <input type="checkbox" id="{{ n }}" name="{{ select-mood }}" value="{{ n }}">
+                <input type="radio" id="{{ n }}" name="{{ select-mood }}" value="{{ n }}">
                 <label for="{{ n }}">{{ n }}</label><br>
                 {% endfor %}
             </fieldset>

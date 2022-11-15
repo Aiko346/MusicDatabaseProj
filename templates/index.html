@@ -91,7 +91,7 @@
 
   
   <p>Choose mood(s) for selected songs</p>
-  <form method="POST" action="/add-mood">
+  <form method="POST" action="/mood-to-filtered">
     <fieldset style='height: 300px; overflow-y:auto'>
       {% for n in mood_options %}
       <input type="checkbox" id="{{ n }}" name="{{ selected-mood }}" value="{{ n }}">
@@ -100,6 +100,14 @@
     </fieldset>
     <input type="text" id="added-mood" name="added-mood">
     <label for="added-mood">Create and assign a new mood</label><br>
+
+    <div style="display: none">
+      {% for n in tracks %}
+      <input type="checkbox" id="{{ n.id }}" name="checked-tracks" checked></input>
+      {% endfor %}
+      <input type="text" id="playlist-name" name="playlist-name">
+    </div>
+    
     <input type="submit" value="Assign Mood">
   </form>
 

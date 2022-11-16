@@ -96,7 +96,7 @@
     <fieldset style='height: 300px; overflow-y:auto'>
       <legend>Mood Options</legend>
       {% for n in mood_options %}
-      <input type="radio" id="{{ 'Check' ~ n.name }}" name="selected_mood" value="{{ n.name }}">
+      <input type="radio" id="{{ 'Check' ~ n.name }}" name="selected-mood" value="{{ n.name }}">
       <label for="{{ 'Check' ~ n.name }}">{{ n["name"] }}</label><br>
      
       {% endfor %}
@@ -137,11 +137,12 @@
 
     <div style="display: none">
       {% for n in tracks %}
-      <input type="checkbox" id="{{ n.id }}" name="{{ n.id }}" value="{{ n.id }}" checked></input>
+      <input type="checkbox" id="{{ n }}" name="{{ 'T' ~ n }}" value="{{ n }}" checked></input>
       {% endfor %}
       <input type="text" id="playlist-name" name="playlist-name">
     </div>
-    <input type="submit" value="Add To New Playlist">
+    
+    <input type="submit" value="Add Filtered Tracks To New Playlist">
   </form>
 
   <form method="POST" action="/new-playlist-to-spotify" id="filtering-form">

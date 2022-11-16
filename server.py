@@ -120,6 +120,7 @@ def index():
     artist_options = []
     mood_options = []
     genre_options = []
+    new_playlist_options = []
 
     if 'username' in session:
         try:
@@ -219,10 +220,26 @@ def index():
             for result in cursor:
                 # can also be accessed using result[0]
                 genre_options.append({'name': result['genre']})
+
+            # all new playlists
+            cursor = g.conn.execute(
+                """SELECT DISTINCT E.id, E.name
+                FROM new_user_playlists E
+                WHERE username=%s
+                ORDER BY E.name
+                """, session['username'])
+            for result in cursor:
+                # can also be accessed using result[0]
+                new_playlist_options.append(
+                    {'name': result['name'], 'id': result['id']})
+
+
+
             cursor.close()
         except Exception as e:
             print(e)
             return redirect("/logout")
+
 
     #
     # Flask uses Jinja templates, which is an extension to HTML where you can
@@ -254,7 +271,8 @@ def index():
     # album_options = [{"id": "a", "name": "aname"}, {"id": "b", "name": "bname"}]
 
     context = dict(genre_options=genre_options, tracks=tracks, liked_by_options=liked_by_options, mood_options=mood_options,
-                   album_options=album_options, playlist_options=playlist_options, artist_options=artist_options)
+                   album_options=album_options, playlist_options=playlist_options, artist_options=artist_options,
+                   new_playlist_options=new_playlist_options)
 
     #
     # render_template looks in the templates/ folder for files.
@@ -993,7 +1011,7 @@ def filtered_to_playlist():
 
                     new_playlist = request.form['selected-new-playlist']
 
-                    if new_playlist != "":                        
+                    if new_playlist != "":
 
                         name = new_playlist["name"]
                         description = new_playlist["description"]

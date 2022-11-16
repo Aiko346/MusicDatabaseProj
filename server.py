@@ -272,18 +272,19 @@ def recommendations():
     recommendations = {}
     if request.method == 'POST':
         try:
-            sp = spotipy.Spotify(auth=session["access_token"])
             redirect_uri = "http://localhost:8111/data-processing"
             auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
                 session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
-
-            if not auth.validate_token(auth.get_cached_token()):
-                print("not valid?")
-                auth.refresh_access_token(
-                    auth.get_cached_token()["refresh_token"])
-                if not auth.validate_token(auth.get_cached_token()):
-                    print("refresh failed")
-                    return redirect("/logout")
+            session["access_token"] = auth.get_cached_token()["access_token"]
+            session["refresh_token"] = auth.get_cached_token()["refresh_token"]
+            sp = spotipy.Spotify(auth=session["access_token"])
+            # if not auth.validate_token(auth.get_cached_token()):
+            #     print("not valid?")
+            #     auth.refresh_access_token(
+            #         auth.get_cached_token()["refresh_token"])
+            #     if not auth.validate_token(auth.get_cached_token()):
+            #         print("refresh failed")
+            #         return redirect("/logout")
         except Exception as e:
             print(e)
             return redirect("/logout")
@@ -478,17 +479,19 @@ def data_processing():
 @app.route('/fill-home')
 def fill_home():  # put data from spotify into SQL
     try:
-        sp = spotipy.Spotify(auth=session["access_token"])
         redirect_uri = "http://localhost:8111/data-processing"
         auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
             session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
-
-        if not auth.validate_token(auth.get_cached_token()):
-            print("not valid?")
-            auth.refresh_access_token(auth.get_cached_token()["refresh_token"])
-            if not auth.validate_token(auth.get_cached_token()):
-                print("refresh failed")
-                return redirect("/logout")
+        session["access_token"] = auth.get_cached_token()["access_token"] #internally checks if it's expired
+        session["refresh_token"] = auth.get_cached_token()["refresh_token"]
+        sp = spotipy.Spotify(auth=session["access_token"])
+        
+        # if not auth.validate_token(auth.get_cached_token()):
+        #     print("not valid?")
+        #     auth.refresh_access_token(auth.get_cached_token()["refresh_token"])
+        #     if not auth.validate_token(auth.get_cached_token()):
+        #         print("refresh failed")
+        #         return redirect("/logout")
     except Exception:
         return redirect("/logout")
 
@@ -968,18 +971,21 @@ def playlist_to_spotify():
 
     if request.method == 'POST':
         try:
-            sp = spotipy.Spotify(auth=session["access_token"])
             redirect_uri = "http://localhost:8111/data-processing"
             auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
                 session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
+            session["access_token"] = auth.get_cached_token()["access_token"]
+            session["refresh_token"] = auth.get_cached_token()["refresh_token"]
+            sp = spotipy.Spotify(auth=session["access_token"])
 
-            if not auth.validate_token(auth.get_cached_token()):
-                print("not valid?")
-                auth.refresh_access_token(
-                    auth.get_cached_token()["refresh_token"])
-                if not auth.validate_token(auth.get_cached_token()):
-                    print("refresh failed")
-                    return redirect("/logout")
+            # if not auth.validate_token(auth.get_cached_token()):
+            #     print("not valid?")
+            #     auth.refresh_access_token(
+            #         auth.get_cached_token()["refresh_token"])
+            #     if not auth.validate_token(auth.get_cached_token()):
+            #         print("refresh failed")
+            #         return redirect("/logout")
+            
         except Exception as e:
             print(e)
             return redirect("/logout")

@@ -993,31 +993,31 @@ def add_mood_to_filtered():
     if request.method == 'POST':
         try:
             if "username" in session:
-
+                sel_mood = request.form["selected_mood"]
                 # get album mood
-                for track in request.form["checked-tracks"]:
-                    sel_mood = request.form["selected-mood"]
-                    
-                    if sel_mood:
+                for key in request.form.keys():
+                    if key[0] == 'T': #check if key is for a track
+                        print(key)
+                        track = request.form[key]
                         try:                  
                             g.conn.execute(
                             '''INSERT INTO Assigned_Mood_To (track_id, username, mood) VALUES 
                             (%s, %s, %s)''', track, session["username"], sel_mood)
-                        except Exception:  # may already exist
+                        except Exception as e:  # may already exist
+                            print(e)
                             pass
-
-                    else:
-                        add_mood = request.form["added-mood"]
-                        if add_mood:
-                            try:   
-                                g.conn.execute(
-                                '''INSERT INTO Assigned_Mood_To (track_id, username, mood) VALUES 
-                                (%s, %s, %s)''', track, session["username"], add_mood)
-                            except Exception:  # may already exist
-                                pass
-
+                add_mood = request.form["added-mood"]
+                if add_mood != "":
+                    try:   
+                        g.conn.execute(
+                        '''INSERT INTO Assigned_Mood_To (track_id, username, mood) VALUES 
+                        (%s, %s, %s)''', track, session["username"], add_mood)
+                    except Exception as e:  # may already exist
+                        print(e)
+                        pass
         except Exception as e:
             print(e)
+    return redirect('/')
             
 # assign mood to albums
 @app.route('/mood-to-albums', methods=["POST", "GET"])

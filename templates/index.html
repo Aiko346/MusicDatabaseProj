@@ -96,16 +96,18 @@
     <fieldset style='height: 300px; overflow-y:auto'>
       <legend>Mood Options</legend>
       {% for n in mood_options %}
-      <input type="checkbox" id="{{ n }}" name="{{ selected-mood }}" value="{{ n }}">
-      <label for="{{ n.name }}">{{ n["name"] }}</label><br>
+      <input type="radio" id="{{ 'Check' ~ n.name }}" name="selected_mood" value="{{ n.name }}">
+      <label for="{{ 'Check' ~ n.name }}">{{ n["name"] }}</label><br>
+     
       {% endfor %}
     </fieldset>
     <input type="text" id="added-mood" name="added-mood">
     <label for="added-mood">Other</label><br>
 
+  
     <div style="display: none">
       {% for n in tracks %}
-      <input type="checkbox" id="{{ n.id }}" name="checked-tracks" checked></input>
+      <input type="checkbox" id="{{ n }}" name="{{ 'T' ~ n }}" value="{{ n }}" checked></input>
       {% endfor %}
       <input type="text" id="playlist-name" name="playlist-name">
     </div>
@@ -135,7 +137,7 @@
 
     <div style="display: none">
       {% for n in tracks %}
-      <input type="checkbox" id="{{ n.id }}" name="checked-tracks" checked></input>
+      <input type="checkbox" id="{{ n.id }}" name="{{ n.id }}" value="{{ n.id }}" checked></input>
       {% endfor %}
       <input type="text" id="playlist-name" name="playlist-name">
     </div>

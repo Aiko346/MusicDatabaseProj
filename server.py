@@ -32,7 +32,7 @@ tmpl_dir = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
 app.debug = True
-app.secret_key = '648e2097fec28316b68b70c56305fdb6d2c07c82e4f00fce04e26ff0230eb3e4'
+app.secret_key = '648e2097fec28316b68b70c56305fdb7d2c07c82e4f00fce04e26ff0230eb3e4'
 # app.config['SECRET_KEY'] = '648e2097fec28316b68b70c56305fdb6d2c07c82e4f00fce04e26ff0230eb3e4'
 # toolbar = DebugToolbarExtension(app)
 
@@ -261,6 +261,7 @@ def index():
 @app.route('/logout')
 def logout():
     session.clear()
+    #print(session.keys())
     return redirect('/')
 
 
@@ -450,17 +451,20 @@ def recommendations():
 
 @app.route('/get-data')
 def get_data():
+   
     redirect_uri = "http://localhost:8111/data-processing"
     auth = spotipy.oauth2.SpotifyOAuth(
-        client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
+        client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes, show_dialog=True)
+    
     return redirect(auth.get_authorize_url())
 
 
 @app.route('/data-processing')
 def data_processing():
+
     redirect_uri = "http://localhost:8111/data-processing"
     auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
-        session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
+        session), show_dialog=True, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
 
     code = request.args.get("code")
     auth.get_access_token(code, as_dict=False)
@@ -508,15 +512,17 @@ def fill_home():  # put data from spotify into SQL
                 playlist_data["id"], session["username"], playlist_data["name"], playlist['total'])
         except Exception as e:
             print(e)
-            pass
         # print(playlist_data["name"])
         # added to limit download time. In the future, could be made more efficient by combining inserts.
         count = 0
+        
         while playlist != None and count < 30:
+            print("test")
             for track_info in playlist["items"]:
                 # print(count)
                 count = count + 1
                 track = track_info["track"]
+                
                 try:
                     try:
                         g.conn.execute(
@@ -545,9 +551,23 @@ def fill_home():  # put data from spotify into SQL
                         print(e)
 
                         # artists of track
+                        #print(track)
+                    if "artists" in track and len(track["artists"]) >= 1:
+                        print(track["name"] + "TRUE")
+                    else:
+                        print(track["name"] + "FALSE")
+                    # else:
+                    #     print(False)
+                    # print(count)
+                    # print(track["artists"])
+                    # print()
+                    try:
                         for artist in track["artists"]:
+                            #print("m")
                             artist_data = sp.artist(artist["id"])
-
+                            #print(artist_data)
+                            #print("HEY")
+                            #print(artist_data)
                             try:
                                 # Artists
                                 g.conn.execute(
@@ -572,14 +592,14 @@ def fill_home():  # put data from spotify into SQL
                                 try:
                                     g.conn.execute(
                                         '''INSERT INTO Genres (genre) VALUES   
-                              (%s)''', genre)
+                            (%s)''', genre)
                                 except Exception as e:
                                     print(e)
 
                                 try:
                                     g.conn.execute(
                                         '''INSERT INTO Is_In (artist_id, genre) VALUES    
-                              (%s, %s)''', artist["id"], genre)
+                            (%s, %s)''', artist["id"], genre)
                                 except Exception as e:
                                     print(e)
 
@@ -596,6 +616,8 @@ def fill_home():  # put data from spotify into SQL
                             (%s, %s, %s, %s)''', artist["id"], track["id"], track["album"]["id"], album_by_artist)
                                 except Exception as e:
                                     print(e)
+                    except Exception as e:
+                        print(e)
                 except Exception as e:
                     print(e)
 
@@ -687,28 +709,30 @@ def add_friend():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    print(session.keys())
+   
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
 
         # make sql call to check if this username/password combo is in the database:
         try:
-            print("here")
+            
             cursor = g.conn.execute(
                 """SELECT DISTINCT U.username, U.password
       FROM Users U
       WHERE U.username=%s AND U.password=%s
       """, username, password)
            # print(len(cursor))
-            print("here2")
+            
             i = 0
             for result in cursor:
                 i = i + 1
             if i != 1:
                 # if it fails, go back to login page
                 return render_template("login.html")
-        except:
-            print("exception")
+        except Exception as e:
+            print(e)
             return render_template("login.html")
 
         session['username'] = username
@@ -773,6 +797,7 @@ def filter():
             # playlists
             playlist_ids = set()
             for playlist in requested["P"]:
+                #print(playlist)
                 cursor = g.conn.execute(
                     """
           SELECT S.track_id AS id
@@ -782,7 +807,7 @@ def filter():
                 update_set(playlist_ids, cursor)
             if len(requested["P"]) > 0:
                 results.append(playlist_ids)
-
+            #print(results)
             # artists
             artist_track_ids = set()
             for artist in requested["R"]:
@@ -797,7 +822,7 @@ def filter():
                 results.append(artist_track_ids)
 
             #print(artist_track_ids)
-            print("here")
+            #print("here")
             # moods
             mood_track_ids = set()
             for mood in requested["M"]:
@@ -846,10 +871,12 @@ def filter():
                 track_ids = results.pop()
             for r in results:
                 track_ids = track_ids.intersection(r)
-            #print(track_ids)
+            
+            print(track_ids)
             # do sql query on each track id to get track name and artists
             # 300 tracks max for reasonable response times
             for id in track_ids:
+                #print(id)
                 cursor = g.conn.execute(
                     """
         SELECT DISTINCT T.name, T.id, A.name AS artist
@@ -858,10 +885,14 @@ def filter():
         LIMIT 200
         """, id)
                 update_tracks(cursor, tracks)
+                
+               
+                #print(tracks)
         else:
             return redirect("/logout")
     except Exception as e:
         print(e)
+    #print(tracks)
     return tracks
 
 
@@ -872,6 +903,7 @@ def update_set(set, cursor):
 
 def update_tracks(cursor, tracks):
     for result in cursor:
+        print(result)
         if result["id"] in tracks:
             tracks[result["id"]]["artist"].append(result["artist"])
         else:

@@ -140,6 +140,7 @@ def index():
       FROM friends F, is_friends_with I
       WHERE I.username=%s AND F.id=I.friend_id
       ORDER BY F.display_name
+      LIMIT 10
       """, session['username'])
             for result in cursor:
                 # can also be accessed using result[0]
@@ -158,6 +159,7 @@ def index():
       WHERE A.id=R.album_id AND
       AD.track_id=R.track_id AND AD.new_playlist_username=%s AND AD.new_playlist_name=%s AND AD.new_playlist_description=%s
       ORDER BY name
+      LIMIT 100
       """, session['username'], session['username'], "Recommendations", "")
             for result in cursor:
                 # can also be accessed using result[0]
@@ -176,6 +178,7 @@ def index():
       FROM Is_On I, Tracks T, Artists A, Added_To AD
       WHERE A.id=I.artist_id AND AD.track_id=I.track_id AND AD.new_playlist_username=%s AND AD.new_playlist_name=%s AND AD.new_playlist_description=%s
       ORDER BY name
+      LIMIT 150
       """, session['username'], session['username'], "Recommendations", "")
             for result in cursor:
                 # can also be accessed using result[0]
@@ -193,6 +196,7 @@ def index():
       FROM assigned_Mood_To2 M
       WHERE M.username=%s
       ORDER BY name
+      LIMIT 50
       """, session['username'], session['username'])
             for result in cursor:
                 # can also be accessed using result[0]
@@ -210,6 +214,7 @@ def index():
       FROM Saved_To S, Is_In I, Is_On O, Added_To AD
       WHERE I.artist_id=O.artist_id AND AD.track_id=O.track_id AND AD.new_playlist_username=%s AND AD.new_playlist_name=%s AND AD.new_playlist_description=%s
       ORDER BY genre
+      LIMIT 150
       """, session['username'], session['username'], "Recommendations", "")
             for result in cursor:
                 # can also be accessed using result[0]
@@ -452,27 +457,31 @@ def recommendations():
 
 @app.route('/get-data')
 def get_data():
-   
-    redirect_uri = "http://localhost:8111/data-processing"
-    auth = spotipy.oauth2.SpotifyOAuth(
-        client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes, show_dialog=True)
-    
+    try:
+        redirect_uri = "http://localhost:8111/data-processing"
+        auth = spotipy.oauth2.SpotifyOAuth(
+            client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes, show_dialog=True)
+    except Exception as e:
+        print(e)
+        return redirect("/logout")  
     return redirect(auth.get_authorize_url())
 
 
 @app.route('/data-processing')
 def data_processing():
+    try:
+        redirect_uri = "http://localhost:8111/data-processing"
+        auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
+            session), show_dialog=True, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
 
-    redirect_uri = "http://localhost:8111/data-processing"
-    auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
-        session), show_dialog=True, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
+        code = request.args.get("code")
+        auth.get_access_token(code, as_dict=False)
 
-    code = request.args.get("code")
-    auth.get_access_token(code, as_dict=False)
-
-    session["access_token"] = auth.get_cached_token()["access_token"]
-    session["refresh_token"] = auth.get_cached_token()["refresh_token"]
-
+        session["access_token"] = auth.get_cached_token()["access_token"]
+        session["refresh_token"] = auth.get_cached_token()["refresh_token"]
+    except Exception as e:
+        print(e)
+        return redirect("/logout")
     return redirect("/login")
 
 
@@ -855,6 +864,9 @@ def filter():
                 update_set(genre_track_ids, cursor)
             if len(requested["G"]) > 0:
                 results.append(genre_track_ids)
+            
+           
+
 
             # find intersection of filters that had any selections
             track_ids = set()
@@ -875,27 +887,52 @@ def filter():
             for r in results:
                 track_ids = track_ids.intersection(r)
             
-            print(track_ids)
+            #popularity
+           
+            max_pop = 100
+            min_pop = 0
+            try:
+                max_pop = int(request.form["max-popularity"])
+            except Exception as e:
+                print(e)
+            try:
+                min_pop = int(request.form["min-popularity"])
+            except Exception as e:
+                print(e)
+
+            #duration
+            max_dur = 2147483647 
+            min_dur = 0
+            try:
+                max_dur = int(request.form["max-duration"])
+            except Exception as e:
+                print(e)
+            try:
+                min_dur = int(request.form["min-duration"])
+            except Exception as e:
+                print(e)
+
+            #print(max_pop)
+            #print(min_pop)
             # do sql query on each track id to get track name and artists
-            # 300 tracks max for reasonable response times
+            # 200 tracks max for reasonable response times
             for id in track_ids:
                 #print(id)
                 cursor = g.conn.execute(
                     """
-        SELECT DISTINCT T.name, T.id, A.name AS artist
+        SELECT DISTINCT T.name, T.id, A.name AS artist, T.popularity, T.duration 
         FROM Is_On I, Artists A, tracks T
-        WHERE T.id=%s AND I.artist_id = A.id AND T.id=I.track_id 
+        WHERE T.id=%s AND I.artist_id = A.id AND T.id=I.track_id AND T.popularity >= %s AND T.popularity <= %s
+        AND T.duration >= %s AND T.duration <= %s
         LIMIT 200
-        """, id)
+        """, id, min_pop, max_pop, min_dur, max_dur)
                 update_tracks(cursor, tracks)
-                
-               
-                #print(tracks)
         else:
             return redirect("/logout")
     except Exception as e:
         print(e)
     #print(tracks)
+    print(tracks)
     return tracks
 
 
@@ -912,6 +949,12 @@ def update_tracks(cursor, tracks):
         else:
             tracks[result["id"]] = {
                 'name': result['name'], 'artist': [result['artist']]}
+        if "popularity" in result:
+            tracks[result["id"]]["popularity"] = result["popularity"]
+        if "duration" in result:
+            tracks[result["id"]]["duration"] = result["duration"]
+        
+        
 
 @app.route('/create-new-playlist', methods=['POST'])
 def new_playlist():

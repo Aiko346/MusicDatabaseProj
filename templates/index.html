@@ -14,11 +14,24 @@
   <p><a href="fill-home">Get data from Spotify.</a> Will only add data, not remove anything.</p>
   <p><a href="recommendations">Get recommendations based on mood</a></p>
   <p><a href="album-mood">Assign moods to your albums</a></p>
-  <div id="tracks" style='max-height: 800px; overflow-y:auto'>
-    {% for n in tracks %}
-    <p class="track" id="{{ n }}">{{ tracks[n].name }} / {% for a in tracks[n].artist %} {{ a }} | {% endfor %}</p>
-    {% endfor %}
-  </div>
+  
+  <div style='max-height: 800px; overflow-y:auto; overflow-x:auto; max-width: 800px;'>
+    <table border=1 id="tracks" >
+      
+      <th>Name</th>
+      <th>Artist(s)</th>
+      <th>Popularity ([0, 100])</th>
+      <th>Duration (ms)</th>
+      {% for n in tracks %}
+      <tr>
+        <td>{{ tracks[n].name }} </td>
+        <td>{% for a in tracks[n].artist %} {{ a }} <br> {% endfor %}</td>
+        <td>{{ tracks[n].popularity }}</td>
+        <td>{{ tracks[n].duration }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
 
   <p>Add a friend</p>
   <form method="POST" action="/add-friend">
@@ -31,9 +44,10 @@
   <p><a href="register">Register</a></p>
   {% endif %}
 
-  <p>Intersection of results between filtering options, union of results within filtering options</p>
-  <p>i.e. "Alice" and "Bob" and "Hold the Girl" shows all songs in the database by (Alice OR Bob) AND on "Hold the
-    Girl"</p>
+  <p>The output is found by first taking the intersection of results between filtering options and the union of results within filtering options.</p>
+  <p>Then, those tracks have the popularity and duration constraints placed on them.</p>
+  <p>i.e. "Alice" and "Bob" and "Hold the Girl" with popularity 50 to 20 shows all songs in the database by (Alice OR Bob) AND on "Hold the
+    Girl" with 50 >= popularity >= 20</p>
   <p>Filtering options are all taken from your existing playlists or new Recommendations playlist.</p>
   <form method="POST" action="/" id="filtering-form">
     <fieldset>
@@ -50,6 +64,14 @@
       <label for="mood">Mood</label><br>
       <input type="radio" id="genre" name="filter_option" value="genre">
       <label for="genre">Genre</label><br>
+      <input type="text" id="max-popularity" name="max-popularity">
+      <label for="max-popularity">Maximum popularity (integer on [0, 100]</label>
+      <input type="text" id="min-popularity" name="min-popularity">
+      <label for="min-popularity">Minimum popularity (integer on [0, 100]</label><br>
+      <input type="text" id="max-duration" name="max-duration">
+      <label for="max-duration">Maximum duration (integer milliseconds) </label>
+      <input type="text" id="min-duration" name="min-duration">
+      <label for="min-duration">Minimum duration (integer milliseconds) </label><br>
     </fieldset>
     <fieldset id="album-options" style='height: 300px; overflow-y:auto'>
       {% for n in album_options %}

@@ -7,20 +7,20 @@
         <p>Add a mood to the albums below:</p>
         <form method="POST" action="/mood-to-albums" >
             <fieldset style='height: 300px; overflow-y:auto'>
+                <legend>Albums</legend>
                 {% for n in album-options %}
                 <input type="checkbox" id="{{ n.id }}" name="{{ select-albums }}" value="{{ n.id }}">
                 <label for="{{ n.id }}">{{ n["name"] }}</label><br>
             </fieldset>
             <fieldset style='height: 300px; overflow-y:auto'>
+                <legend>Mood Options</legend>
                 {% for n in moods %}
                 <input type="radio" id="{{ n }}" name="{{ select-mood }}" value="{{ n }}">
                 <label for="{{ n }}">{{ n }}</label><br>
                 {% endfor %}
             </fieldset>
-            <fieldset style='height: 300px; overflow-y:auto'>   
-                <input type="text" id="added-mood" name="added-mood">
-                <label for="added-mood">Create and assign a new mood</label><br>
-            </fieldset>
+            <input type="text" id="added-mood" name="added-mood">
+            <label for="added-mood">Other</label><br>
             <input type="submit" value="Assign Mood">
         </form>
     

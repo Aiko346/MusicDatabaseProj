@@ -878,8 +878,6 @@ def update_tracks(cursor, tracks):
             tracks[result["id"]] = {
                 'name': result['name'], 'artist': [result['artist']]}
 
-
-
 @app.route('/create-new-playlist', methods=['POST'])
 def new_playlist():
     name = request.form['playlist-name']

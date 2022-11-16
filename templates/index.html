@@ -13,6 +13,7 @@
   <p><a href="logout">Logout</a></p>
   <p><a href="fill-home">Get data from Spotify.</a> Will only add data, not remove anything.</p>
   <p><a href="recommendations">Get recommendations based on mood</a></p>
+  <p><a href="album-mood">Assign moods to your albums</a></p>
   <div id="tracks" style='max-height: 800px; overflow-y:auto'>
     {% for n in tracks %}
     <p class="track" id="{{ n }}">{{ tracks[n].name }} / {% for a in tracks[n].artist %} {{ a }} | {% endfor %}</p>
@@ -86,20 +87,21 @@
       <label for="{{ n.name }}">{{ n["name"] }}</label><br>
       {% endfor %}
     </fieldset>
-    <input type="submit" value="Submit">
+    <input type="submit" value="Filter!">
   </form>
 
   
   <p>Choose mood(s) for selected songs</p>
   <form method="POST" action="/mood-to-filtered">
     <fieldset style='height: 300px; overflow-y:auto'>
+      <legend>Mood Options</legend>
       {% for n in mood_options %}
       <input type="checkbox" id="{{ n }}" name="{{ selected-mood }}" value="{{ n }}">
       <label for="{{ n.name }}">{{ n["name"] }}</label><br>
       {% endfor %}
     </fieldset>
-    <label for="added-mood">OR create a new mood</label><br>
     <input type="text" id="added-mood" name="added-mood">
+    <label for="added-mood">Other</label><br>
 
     <div style="display: none">
       {% for n in tracks %}

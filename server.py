@@ -638,74 +638,76 @@ def fill_home():  # put data from spotify into SQL
 def add_friend():
 
     if request.method == 'POST':
-        # refresh access token (only valid for about an hour)
-        result = requests.post(url="https://accounts.spotify.com/api/token", data={
-            "grant_type": "refresh_token", "refresh_token": session["refresh_token"], "client_id": client_id, "client_secret": client_secret
-        })
-        if result.status_code != 200:
-            # log in again to both spotify and this app
-            return redirect("/get-data")
-            # need to do both because redirecting to spotify clears cache, logging you out of this as well
-        sp = spotipy.Spotify(auth=session["access_token"])
-        user_info = sp.user(request.form["friend-id"])
-        display_name = user_info["display_name"]
+
+        if request.form["friend-id"] != "":
+
+            # refresh access token (only valid for about an hour)
+            result = requests.post(url="https://accounts.spotify.com/api/token", data={
+                "grant_type": "refresh_token", "refresh_token": session["refresh_token"], "client_id": client_id, "client_secret": client_secret
+            })
+            if result.status_code != 200:
+                # log in again to both spotify and this app
+                return redirect("/get-data")
+                # need to do both because redirecting to spotify clears cache, logging you out of this as well
+            sp = spotipy.Spotify(auth=session["access_token"])
+            user_info = sp.user(request.form["friend-id"])
+            display_name = user_info["display_name"]
         
-        try:
-            g.conn.execute(
-            """INSERT INTO Is_Friends_With (friend_id, username) VALUES 
-            (%s, %s)""",
-            request.form["friend-id"], session["username"])
-        except Exception as e:
-            print(e)
+            try:
+                g.conn.execute(
+                """INSERT INTO Is_Friends_With (friend_id, username) VALUES 
+                (%s, %s)""", request.form["friend-id"], session["username"])
+            except Exception as e:
+                print(e)
 
-        user_playlist_info = sp.user_playlists(
-            request.form["friend-id"], limit=2)  # 5 max
-        print(user_playlist_info)
-        user_playlist_ids = []
-        for item in user_playlist_info["items"]:
-            user_playlist_ids.append(item["uri"])
-        # add display_name to sql
-        for uri in user_playlist_ids:
-            friend_tracks = sp.user_playlist_tracks(
-                request.form["friend-id"], uri[17:])
-            #print(friend_tracks)
-        
-        # limit at 100 per playlist due to speed
-        # check if tracks in Tracks for user already, if so create Liked_By relationship
-        usr_tracks = set()
+            user_playlist_info = sp.user_playlists(request.form["friend-id"], limit=2)  # 5 max
+            print(user_playlist_info)
+            
+            user_playlist_ids = []
+            for item in user_playlist_info["items"]:
+                user_playlist_ids.append(item["uri"])
+            # add display_name to sql
+            for uri in user_playlist_ids:
+                friend_tracks = sp.user_playlist_tracks(
+                    request.form["friend-id"], uri[17:])
+                #print(friend_tracks)
+            
+            # limit at 100 per playlist due to speed
+            # check if tracks in Tracks for user already, if so create Liked_By relationship
+            usr_tracks = set()
 
-        if len(friend_tracks) > 0:
+            if len(friend_tracks) > 0:
 
-            cursor = g.conn.execute(
-                """SELECT S.track_id AS id
-                FROM Tracks T
-                WHERE E.username=%s
-                LIMIT 1000
-                """, session['username'])
-            update_set(usr_tracks, cursor)
+                cursor = g.conn.execute(
+                    """SELECT S.track_id AS id
+                    FROM Tracks T
+                    WHERE E.username=%s
+                    LIMIT 1000
+                    """, session['username'])
+                update_set(usr_tracks, cursor)
 
-            for t in friend_tracks:
-                if t in usr_tracks:
-                    try:
-                        g.conn.execute(
-                            """INSERT INTO Liked_By (track_id, friend_id) VALUES 
-                            (%s, %s)""",
-                            t["id"], request.form["friend-id"])
-                    except Exception as e:
-                        print(e)
+                for t in friend_tracks:
+                    if t in usr_tracks:
+                        try:
+                            g.conn.execute(
+                                """INSERT INTO Liked_By (track_id, friend_id) VALUES 
+                                (%s, %s)""",
+                                t["id"], request.form["friend-id"])
+                        except Exception as e:
+                            print(e)
 
-        #print(track_ids)
-        # do sql query on each track id to get track name and artists
-        # 300 tracks max for reasonable response times
+            #print(track_ids)
+            # do sql query on each track id to get track name and artists
+            # 300 tracks max for reasonable response times
 
 
-    #    # c = sp.current_user_playlists(limit = 10)
-    # # for item in c["items"]:
-    # #     print(item['description'])
-    # #     print(item["name"])
-    # #     print(item[])
-    # playlist_data = sp.user_playlist(user="zsp0yz1vi3brxtpz39a8zefqk",
-    #                                  playlist_id="5RuV6Qo9qJMrJ49NwTIYRW", fields="tracks,id,next,name,description")
+        #    # c = sp.current_user_playlists(limit = 10)
+        # # for item in c["items"]:
+        # #     print(item['description'])
+        # #     print(item["name"])
+        # #     print(item[])
+        # playlist_data = sp.user_playlist(user="zsp0yz1vi3brxtpz39a8zefqk",
+        #                                  playlist_id="5RuV6Qo9qJMrJ49NwTIYRW", fields="tracks,id,next,name,description")
 
     return redirect("/")
 
@@ -944,22 +946,27 @@ def filtered_to_playlist():
         try:
             if "username" in session:
 
-                if 'Add New Playlist To Spotify' in request.form:
+                if 'Add Filtered Tracks To New Playlist' in request.form:
 
-                    new_playlist = request.form['new_playlist_option']
-                    if new_playlist:
+                    new_playlist = request.form['selected-new-playlist']
+
+                    if new_playlist != "":                        
 
                         name = new_playlist["name"]
                         description = new_playlist["description"]
 
-                        for track in request.form["checked-tracks"]:
-                            # add each track to new_playlist
-                            try:
-                                g.conn.execute(
-                                    '''INSERT INTO Added_To (track_id, new_playlist_name, new_playlist_description, new_playlist_username, date_added) VALUES 
-                                    (%s, %s, %s, %s, %s)''', track, name, description, session["username"], date.today().strftime("%Y-%m-%d"))
-                            except Exception as e:
-                                print(e)
+                        for key in request.form.keys():
+                            if key[0] == 'T': #check if key is for a track
+                            
+                                track = request.form[key]
+                                
+                                # add each track to new_playlist
+                                try:
+                                    g.conn.execute(
+                                        '''INSERT INTO Added_To (track_id, new_playlist_name, new_playlist_description, new_playlist_username, date_added) VALUES 
+                                        (%s, %s, %s, %s, %s)''', track, name, description, session["username"], date.today().strftime("%Y-%m-%d"))
+                                except Exception as e:
+                                    print(e)
         except Exception as e:
             print(e)
 
@@ -989,36 +996,36 @@ def playlist_to_spotify():
         except Exception as e:
             print(e)
             return redirect("/logout")
-        
-        # 
+    
         if "username" in session:
             try:
+                if 'Add New Playlist To Spotify' in request.form:
 
-                new_playlist = request.form['new-spotify-playlist']
+                    new_playlist = request.form['new-spotify-playlist']
 
-                np = sp.user_playlist_create(
-                    session["username"], 
-                    new_playlist["name"], 
-                    public = True, 
-                    description = new_playlist["description"])
+                    np = sp.user_playlist_create(
+                        session["username"], 
+                        new_playlist["name"], 
+                        public = True, 
+                        description = new_playlist["description"])
 
-                tracks = []
+                    tracks = []
 
-                cursor = g.conn.execute(
-                    """SELECT A.track_id AS id
-                    FROM Added_To A
-                    WHERE A.username=%s AND A.new_playlist_name=%s AND A.new_playlist_description=%s
-                    LIMIT 1000""", 
-                    session['username'], 
-                    new_playlist["name"], 
-                    new_playlist["description"])
-                update_set(tracks, cursor)
+                    cursor = g.conn.execute(
+                        """SELECT A.track_id AS id
+                        FROM Added_To A
+                        WHERE A.username=%s AND A.new_playlist_name=%s AND A.new_playlist_description=%s
+                        LIMIT 1000""", 
+                        session['username'], 
+                        new_playlist["name"], 
+                        new_playlist["description"])
+                    update_set(tracks, cursor)
 
-                t = sp.user_playlist_add_tracks(
-                    session['username'], 
-                    np, 
-                    tracks, 
-                    position=None)
+                    t = sp.user_playlist_add_tracks(
+                        session['username'], 
+                        np, 
+                        tracks, 
+                        position=None)
            
             except Exception as e:
                 print(e)
@@ -1031,7 +1038,7 @@ def add_mood_to_filtered():
     if request.method == 'POST':
         try:
             if "username" in session:
-                sel_mood = request.form["selected_mood"]
+                sel_mood = request.form["selected-mood"]
                 # get album mood
                 for key in request.form.keys():
                     if key[0] == 'T': #check if key is for a track
@@ -1065,28 +1072,28 @@ def add_album_mood():
         try:
             if "username" in session:
 
+                select_mood = request.form["select-album-mood"]
                 # get album mood
-                for album in request.form["select-albums"]:
-                    sel_mood = request.form["select-mood"]
-                    
-                    if sel_mood:
+                for key in request.form.keys():
+                    if key[0] == 'ALM': #check if key is for a track
+                        album = request.form[key]
                         try:                  
                             g.conn.execute(
                             '''INSERT INTO Assigned_Mood_To2 (album_id, username, mood) VALUES 
-                            (%s, %s, %s)''', album["id"], session["username"], sel_mood)
-                        except Exception:  # may already exist
+                            (%s, %s, %s)''', album, session["username"], select_mood)
+                        except Exception as e:  # may already exist
+                            print(e)
                             pass
 
-                    else:
-                        add_mood = request.form["added-mood"]
-                        if add_mood:
-                            try:   
-                                g.conn.execute(
-                                '''INSERT INTO Assigned_Mood_To2 (album_id, username, mood) VALUES 
-                                (%s, %s, %s)''', album["id"], session["username"], add_mood)
-                            except Exception:  # may already exist
-                                pass
-
+                add_mood = request.form["add-album-mood"]
+                if add_mood != "":
+                    try:   
+                        g.conn.execute(
+                        '''INSERT INTO Assigned_Mood_To2 (album_id, username, mood) VALUES 
+                        (%s, %s, %s)''', album, session["username"], add_mood)
+                    except Exception as e:  # may already exist
+                        print(e)
+                        pass
         except Exception as e:
             print(e)
 

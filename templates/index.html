@@ -153,8 +153,8 @@
     <fieldset>
       <legend>Created Playlists</legend>
       {% for n in new_playlist_options %}
-      <input type="radio" id="{{ loop.index }}" name="selected-new-playlist" value="{{ n.len ~ n.name ~ n.description }}">
-      <label for="{{ n.len ~ n.name ~ n.description }}">{{n.name}} | {{n.description}}</label><br>
+      <input type="radio" id="{{ loop.index }}" name="selected-new-playlist" value="{{ n.len ~ ' ' ~ n.name ~ n.description }}">
+      <label for="{{ n.len ~ ' ' ~ n.name ~ n.description }}">{{n.name}} | {{n.description}}</label><br>
       {% endfor %}
     </fieldset>
 
@@ -173,8 +173,8 @@
     <fieldset>
       <legend>Created Playlists</legend>
       {% for n in new_playlist_options %}
-      <input type="radio" id="{{ loop.index }}" name="new-spotify-playlist" value="{{ n.len ~ n.name ~ n.description  }}">
-      <label for="{{ n.len ~ n.name ~ n.description }}">{{n.name}} | {{n.description}}</label><br>
+      <input type="radio" id="{{ loop.index }}" name="new-spotify-playlist" value="{{ n.len ~ ' ' ~ n.name ~ n.description }}">
+      <label for="{{ n.len ~ ' ' ~ n.name ~ n.description }}">{{n.name}} | {{n.description}}</label><br>
       {% endfor %}
     </fieldset>
     <input type="submit" value="Add New Playlist To Spotify">

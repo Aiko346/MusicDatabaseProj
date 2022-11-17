@@ -15,7 +15,7 @@ from datetime import date
 app = Flask(__name__)
 client_id = "67bdc4b1d4d74f5d88cdab031fee6a41"
 client_secret = "1a88af0b600d4ce3bf81c5191ae3aac0"
-scopes = "playlist-read-private,user-read-private,user-read-email,user-library-read"
+scopes = "playlist-read-private,user-read-private,user-read-email,user-library-read, playlist-modify-public"
 
 """
 Columbia's COMS W4111.001 Introduction to Databases
@@ -1110,14 +1110,6 @@ def playlist_to_spotify():
             session["access_token"] = auth.get_cached_token()["access_token"]
             session["refresh_token"] = auth.get_cached_token()["refresh_token"]
             sp = spotipy.Spotify(auth=session["access_token"])
-
-            # if not auth.validate_token(auth.get_cached_token()):
-            #     print("not valid?")
-            #     auth.refresh_access_token(
-            #         auth.get_cached_token()["refresh_token"])
-            #     if not auth.validate_token(auth.get_cached_token()):
-            #         print("refresh failed")
-            #         return redirect("/logout")
             
         except Exception as e:
             print(e)
@@ -1129,28 +1121,36 @@ def playlist_to_spotify():
                 len = int(new_playlist[0])
                 name = new_playlist[1:len+1]
                 desc = new_playlist[len+1:]
+                print(desc)
+                print(type(desc))
 
-                np = sp.user_playlist_create(
-                    session["username"], 
+                user_id = sp.me()["id"]
+
+                new_playlist = sp.user_playlist_create(
+                    user_id,
                     name, 
-                    public = True, 
+                    public = True,
+                    collaborative = False, 
                     description = desc)
 
-                tracks = []
+                playlist_id = new_playlist["id"]
+
+                tracks = set()
 
                 cursor = g.conn.execute(
                     """SELECT A.track_id AS id
                     FROM Added_To A
-                    WHERE A.username=%s AND A.new_playlist_name=%s AND A.new_playlist_description=%s
+                    WHERE A.new_playlist_username=%s AND A.new_playlist_name=%s AND A.new_playlist_description=%s
                     LIMIT 1000""", 
                     session['username'], 
                     name, 
                     desc)
                 update_set(tracks, cursor)
 
+
                 t = sp.user_playlist_add_tracks(
                     session['username'], 
-                    np, 
+                    playlist_id, 
                     tracks, 
                     position=None)
            

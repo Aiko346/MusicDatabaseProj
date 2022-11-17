@@ -153,7 +153,7 @@
       <legend>Created Playlists</legend>
       {% for n in new_playlist_options %}
       <input type="radio" id="{{ loop.index }}" name="selected-new-playlist" value="{{ n.len ~ n.description ~ n.name }}">
-      <label for="{{ n.len ~ n.description ~ n.name }}">{n.name} | {n.description}</label><br>
+      <label for="{{ n.len ~ n.description ~ n.name }}">{{n.name}} | {{n.description}}</label><br>
       {% endfor %}
     </fieldset>
 

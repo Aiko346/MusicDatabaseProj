@@ -9,20 +9,20 @@
             <fieldset style='height: 300px; overflow-y:auto'>
                 <legend>Albums</legend>
                 {% for n in album-options %}
-                <input type="checkbox" id="{{ n.id }}" name="{{ 'ALM' ~ loop.index }}" value="{{ n.id }}">
-                <label for="{{ n.id }}">{{ n["name"] }}</label><br>
+                <input type="checkbox" id="{{ n.id }}" name="{{ 'Q' ~ loop.index }}" value="{{ n.id }}">
+                <label for="{{ 'Q' ~ loop.index }}">{{ n["name"] }}</label><br>
             </fieldset>
 
             <fieldset style='height: 300px; overflow-y:auto'>
                 <legend>Mood Options</legend>
-                {% for n in moods %}
-                <input type="radio" id="{{ 'AMO' ~ n.name }}" name="{{ select-album-mood }}" value="{{ n.name }}">
-                <label for="{{ 'AM' ~ n.name }}">{{ n["name"] }}</label><br>
+                {% for n in mood_options %}
+                <input type="radio" id="{{ 'Z' ~ n.name }}" name="{{ select-album-mood }}" value="{{ n.name }}">
+                <label for="{{ 'Z' ~ n.name }}">{{ n["name"] }}</label><br>
                 {% endfor %}
 
             </fieldset>
-            <input type="text" id="added-mood" name="add-album-mood">
-            <label for="added-mood">Other</label><br>
+            <input type="text" id="added-album-mood" name="add-album-mood">
+            <label for="added-album-mood">Other</label><br>
             <input type="submit" value="Assign Mood">
         </form>
     

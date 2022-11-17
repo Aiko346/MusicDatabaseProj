@@ -223,7 +223,7 @@ def index():
 
             # all new playlists
             cursor = g.conn.execute(
-                """SELECT DISTINCT E.id, E.name
+                """SELECT DISTINCT E.name, E.description
                 FROM new_user_playlists E
                 WHERE username=%s
                 ORDER BY E.name
@@ -1136,7 +1136,7 @@ def add_album_mood():
                 select_mood = request.form["select-album-mood"]
                 # get album mood
                 for key in request.form.keys():
-                    if key[0] == 'ALM': #check if key is for a track
+                    if key[0] == 'Q': #check if key is for a track
                         album = request.form[key]
                         try:                  
                             g.conn.execute(

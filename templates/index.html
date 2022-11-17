@@ -186,9 +186,11 @@
     $(document).ready(function () {
       let options = ["album", "liked-by", "playlist", "artist", "mood", "genre"];
       options.forEach(function (option) {
-        $("#" + option + "-options").hide();
+        $("#" + option + "-options").hide(); 
+        //selects each set of filtering options and hides them by default
       });
       $("#filtering-form").click(function () {
+         //when the filtering-form has a 
         options.forEach(function (option) {
           if ($("#" + option).is(":checked")) {
             $("#" + option + "-options").show();

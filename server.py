@@ -179,13 +179,12 @@ def index():
       FROM Is_On I, Tracks T, Artists A, Added_To AD
       WHERE A.id=I.artist_id AND AD.track_id=I.track_id AND AD.new_playlist_username=%s AND AD.new_playlist_name=%s AND AD.new_playlist_description=%s
       ORDER BY name
-      LIMIT 150
+      LIMIT 400
       """, session['username'], session['username'], "Recommendations", "")
             for result in cursor:
                 # can also be accessed using result[0]
                 artist_options.append(
                     {'name': result['name'], 'id': result['id']})
-
             # all moods from this user
             cursor = g.conn.execute(
                 """
@@ -667,19 +666,29 @@ def add_friend():
     if request.method == 'POST':
 
         if request.form["friend-id"] != "":
-
-            # refresh access token (only valid for about an hour)
-            result = requests.post(url="https://accounts.spotify.com/api/token", data={
-                "grant_type": "refresh_token", "refresh_token": session["refresh_token"], "client_id": client_id, "client_secret": client_secret
-            })
-            if result.status_code != 200:
-                # log in again to both spotify and this app
-                return redirect("/get-data")
-                # need to do both because redirecting to spotify clears cache, logging you out of this as well
-            sp = spotipy.Spotify(auth=session["access_token"])
+            try:
+                redirect_uri = "http://localhost:8111/data-processing"
+                auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
+                    session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
+                session["access_token"] = auth.get_cached_token()["access_token"] #internally checks if it's expired
+                session["refresh_token"] = auth.get_cached_token()["refresh_token"]
+                sp = spotipy.Spotify(auth=session["access_token"])
+                
+            except Exception:
+                return redirect("/logout")
+           
             user_info = sp.user(request.form["friend-id"])
             display_name = user_info["display_name"]
         
+            #add friend to sql
+            try:
+                g.conn.execute(
+                """INSERT INTO Friends (id, display_name) VALUES 
+                (%s, %s)""", request.form["friend-id"], display_name)
+            except Exception as e:
+                print(e)
+
+            #add is_friends_with to sql
             try:
                 g.conn.execute(
                 """INSERT INTO Is_Friends_With (friend_id, username) VALUES 
@@ -688,40 +697,57 @@ def add_friend():
                 print(e)
 
             user_playlist_info = sp.user_playlists(request.form["friend-id"], limit=2)  # 5 max
-            print(user_playlist_info)
+            #print(user_playlist_info)
             
             user_playlist_ids = []
             for item in user_playlist_info["items"]:
                 user_playlist_ids.append(item["uri"])
-            # add display_name to sql
+            
+            # limit at 50 per playlist for speed
+            # check if tracks in Tracks for user already, if so create Liked_By relationship
+            user_tracks = set()
+            
+            print("finding user tracks")
             for uri in user_playlist_ids:
                 friend_tracks = sp.user_playlist_tracks(
-                    request.form["friend-id"], uri[17:])
-                #print(friend_tracks)
+                    request.form["friend-id"], uri[17:], limit = 50)
+                
+                for item in friend_tracks["items"]:
+                    user_tracks.add(item["track"]["id"])
+                   
+            #print(user_tracks)
             
-            # limit at 100 per playlist due to speed
-            # check if tracks in Tracks for user already, if so create Liked_By relationship
-            usr_tracks = set()
+            #check if each track can be found in an existing_playlist or Recommendation related to the user
+            #not checking every single song (no point in liking songs this user won't filter down to)
+            #if they can be found, create LIKED_BY 
+            liked_tracks=set()
+            
+            cursor = g.conn.execute(
+                """SELECT A.track_id AS id
+                FROM Added_To A 
+                WHERE A.new_playlist_username=%s AND A.new_playlist_name=%s AND A.new_playlist_description=%s
+                UNION 
+                SELECT S.track_id AS id
+                FROM Saved_To S, Existing_User_Playlists E
+                WHERE E.username=%s AND E.id=S.existing_playlist_id 
+                LIMIT 300
+                """, session['username'], "Recommendations", "", session['username'])
 
-            if len(friend_tracks) > 0:
+            #check if each track is also liked by the friend
+            for result in cursor:
+                if result["id"] in user_tracks:
+                    liked_tracks.add(result["id"])
+                    print("match" + result["id"])
 
-                cursor = g.conn.execute(
-                    """SELECT S.track_id AS id
-                    FROM Tracks T
-                    WHERE E.username=%s
-                    LIMIT 1000
-                    """, session['username'])
-                update_set(usr_tracks, cursor)
-
-                for t in friend_tracks:
-                    if t in usr_tracks:
-                        try:
-                            g.conn.execute(
-                                """INSERT INTO Liked_By (track_id, friend_id) VALUES 
-                                (%s, %s)""",
-                                t["id"], request.form["friend-id"])
-                        except Exception as e:
-                            print(e)
+            #print(liked_tracks)
+            for t in liked_tracks:
+                try:
+                    g.conn.execute(
+                        """INSERT INTO Liked_By (track_id, friend_id) VALUES 
+                        (%s, %s)""",
+                        t, request.form["friend-id"])
+                except Exception as e:
+                    print(e)
 
             #print(track_ids)
             # do sql query on each track id to get track name and artists
@@ -817,6 +843,7 @@ def filter():
             # liked_by
             liked_by_track_ids = set()
             for friend in requested["L"]:
+                print(friend)
                 cursor = g.conn.execute(
                     """
           SELECT L.track_id AS id
@@ -826,7 +853,8 @@ def filter():
                 update_set(liked_by_track_ids, cursor)
             if len(requested["L"]) > 0:
                 results.append(liked_by_track_ids)
-
+            print("855")
+            print(liked_by_track_ids)
             # playlists
             playlist_ids = set()
             for playlist in requested["P"]:
@@ -907,7 +935,7 @@ def filter():
                 track_ids = results.pop()
             for r in results:
                 track_ids = track_ids.intersection(r)
-            
+            print(track_ids)
             #popularity
            
             max_pop = 100
@@ -938,16 +966,47 @@ def filter():
             # do sql query on each track id to get track name and artists
             # 200 tracks max for reasonable response times
             for id in track_ids:
+                print(id)
                 #print(id)
                 cursor = g.conn.execute(
                     """
         SELECT DISTINCT T.name, T.id, A.name AS artist, T.popularity, T.duration 
         FROM Is_On I, Artists A, tracks T
-        WHERE T.id=%s AND I.artist_id = A.id AND T.id=I.track_id AND T.popularity >= %s AND T.popularity <= %s
+        WHERE T.id=%s AND I.artist_id=A.id AND T.id=I.track_id 
+        AND T.popularity >= %s AND T.popularity <= %s
         AND T.duration >= %s AND T.duration <= %s
         LIMIT 200
         """, id, min_pop, max_pop, min_dur, max_dur)
-                update_tracks(cursor, tracks)
+                #update_tracks(cursor, tracks)
+                # print(tracks)
+                cursor_copy = []
+                result_count = 0
+                for result in cursor:
+                    result_count = result_count + 1
+                    cursor_copy.append(result)
+                # print("result_count:")
+                # print(result_count)
+                # result_count = 0
+                # for result in cursor:
+                #     result_count = result_count + 1
+                # print("result_count2:")
+                # print(result_count)
+                if result_count == 0: #may have been missing an artist and was skipped
+                    cursor = g.conn.execute(
+                    """
+                    SELECT DISTINCT T.name, T.id, T.popularity, T.duration 
+                    FROM tracks T
+                    WHERE T.id=%s
+                    AND T.popularity >= %s AND T.popularity <= %s
+                    AND T.duration >= %s AND T.duration <= %s
+                    LIMIT 200
+                    """, id, min_pop, max_pop, min_dur, max_dur)
+                    update_tracks(cursor, tracks)
+                    print("missing")
+                    print(tracks)
+                else: 
+                    update_tracks(cursor_copy, tracks)
+                    print(tracks)
         else:
             return redirect("/logout")
     except Exception as e:
@@ -963,13 +1022,20 @@ def update_set(set, cursor):
 
 
 def update_tracks(cursor, tracks):
+   
     for result in cursor:
-        print(result)
-        if result["id"] in tracks:
-            tracks[result["id"]]["artist"].append(result["artist"])
+        #print(result)
+        if "artist" in result:
+            print("has artist")
+            if result["id"] in tracks:
+                tracks[result["id"]]["artist"].append(result["artist"])
+            else:
+                tracks[result["id"]] = {
+                    'name': result['name'], 'artist': [result['artist']]}
         else:
+            print("does not have artist")
             tracks[result["id"]] = {
-                'name': result['name'], 'artist': [result['artist']]}
+                    'name': result['name'], 'artist': ["<Missing :(>"]}
         if "popularity" in result:
             tracks[result["id"]]["popularity"] = result["popularity"]
         if "duration" in result:

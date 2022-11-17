@@ -231,7 +231,7 @@ def index():
             for result in cursor:
                 # can also be accessed using result[0]
                 new_playlist_options.append(
-                    {'name': result['name'], 'description': result['description']})
+                    {'len': len(result['name']),'name': result['name'], 'description': result['description']})
 
 
 
@@ -1008,27 +1008,25 @@ def filtered_to_playlist():
         try:
             if "username" in session:
 
-                if 'Add Filtered Tracks To New Playlist' in request.form:
+                new_playlist = request.form['selected-new-playlist']
 
-                    new_playlist = request.form['selected-new-playlist']
+                if new_playlist != "":
+                    len = int(new_playlist[0])
+                    name = new_playlist[1:len+1]
+                    description = new_playlist[len+1:]
 
-                    if new_playlist != "":
-
-                        name = new_playlist["name"]
-                        description = new_playlist["description"]
-
-                        for key in request.form.keys():
-                            if key[0] == 'T': #check if key is for a track
+                    for key in request.form.keys():
+                        if key[0] == 'T': #check if key is for a track
                             
-                                track = request.form[key]
+                            track = request.form[key]
                                 
-                                # add each track to new_playlist
-                                try:
-                                    g.conn.execute(
-                                        '''INSERT INTO Added_To (track_id, new_playlist_name, new_playlist_description, new_playlist_username, date_added) VALUES 
-                                        (%s, %s, %s, %s, %s)''', track, name, description, session["username"], date.today().strftime("%Y-%m-%d"))
-                                except Exception as e:
-                                    print(e)
+                            # add each track to new_playlist
+                            try:
+                                g.conn.execute(
+                                    '''INSERT INTO Added_To (track_id, new_playlist_name, new_playlist_description, new_playlist_username, date_added) VALUES 
+                                    (%s, %s, %s, %s, %s)''', track, name, description, session["username"], date.today().strftime("%Y-%m-%d"))
+                            except Exception as e:
+                                print(e)
         except Exception as e:
             print(e)
 
@@ -1061,37 +1059,39 @@ def playlist_to_spotify():
     
         if "username" in session:
             try:
-                if 'Add New Playlist To Spotify' in request.form:
+                new_playlist = request.form['new-spotify-playlist']
+                len = int(new_playlist[0])
+                name = new_playlist[1:len+1]
+                desc = new_playlist[len+1:]
 
-                    new_playlist = request.form['new-spotify-playlist']
+                np = sp.user_playlist_create(
+                    session["username"], 
+                    name, 
+                    public = True, 
+                    description = desc)
 
-                    np = sp.user_playlist_create(
-                        session["username"], 
-                        new_playlist["name"], 
-                        public = True, 
-                        description = new_playlist["description"])
+                tracks = []
 
-                    tracks = []
+                cursor = g.conn.execute(
+                    """SELECT A.track_id AS id
+                    FROM Added_To A
+                    WHERE A.username=%s AND A.new_playlist_name=%s AND A.new_playlist_description=%s
+                    LIMIT 1000""", 
+                    session['username'], 
+                    name, 
+                    desc)
+                update_set(tracks, cursor)
 
-                    cursor = g.conn.execute(
-                        """SELECT A.track_id AS id
-                        FROM Added_To A
-                        WHERE A.username=%s AND A.new_playlist_name=%s AND A.new_playlist_description=%s
-                        LIMIT 1000""", 
-                        session['username'], 
-                        new_playlist["name"], 
-                        new_playlist["description"])
-                    update_set(tracks, cursor)
-
-                    t = sp.user_playlist_add_tracks(
-                        session['username'], 
-                        np, 
-                        tracks, 
-                        position=None)
+                t = sp.user_playlist_add_tracks(
+                    session['username'], 
+                    np, 
+                    tracks, 
+                    position=None)
            
             except Exception as e:
                 print(e)
                 return redirect("/logout")
+    return redirect('/')
 
 # assign mood to filtered tracks
 @app.route('/mood-to-filtered', methods=["POST", "GET"])
@@ -1100,13 +1100,15 @@ def add_mood_to_filtered():
     if request.method == 'POST':
         try:
             if "username" in session:
+
                 sel_mood = request.form["selected-mood"]
                 # get album mood
                 for key in request.form.keys():
                     if key[0] == 'T': #check if key is for a track
                         print(key)
                         track = request.form[key]
-                        try:                  
+                        try:         
+                            print(sel_mood)        
                             g.conn.execute(
                             '''INSERT INTO Assigned_Mood_To (track_id, username, mood) VALUES 
                             (%s, %s, %s)''', track, session["username"], sel_mood)
@@ -1114,7 +1116,9 @@ def add_mood_to_filtered():
                             print(e)
                             pass
                 add_mood = request.form["added-mood"]
+                print(add_mood)
                 if add_mood != "":
+                    print(add_mood)
                     try:   
                         g.conn.execute(
                         '''INSERT INTO Assigned_Mood_To (track_id, username, mood) VALUES 

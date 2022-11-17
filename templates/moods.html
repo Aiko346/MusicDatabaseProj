@@ -3,12 +3,11 @@
 
     <body>
         <p><a href="/">Home</a></p>
-    
         <p>Add a mood to the albums below:</p>
-        <form method="POST" action="/moods" >
+        <form method="POST" action="/moods" > 
             <fieldset style='height: 300px; overflow-y:auto'>
                 <legend>Albums</legend>
-                {% for n in album-options %}
+                {% for n in album_options %}
                 <input type="checkbox" id="{{ n.id }}" name="{{ 'Q' ~ loop.index }}" value="{{ n.id }}">
                 <label for="{{ 'Q' ~ loop.index }}">{{ n["name"] }}</label><br>
             </fieldset>
@@ -21,7 +20,7 @@
                 {% endfor %}
 
             </fieldset>
-            <input type="text" id="added-album-mood" name="add-album-mood">
+            <input type="text" id="added-album-mood" name="added-album-mood">
             <label for="added-album-mood">Other</label><br>
             <input type="submit" value="Assign Mood">
         </form>

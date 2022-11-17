@@ -1108,8 +1108,6 @@ def playlist_to_spotify():
                 len = int(new_playlist[0])
                 name = new_playlist[1:len+1]
                 desc = new_playlist[len+1:]
-                print(desc)
-                print(type(desc))
 
                 user_id = sp.me()["id"]
 
@@ -1158,11 +1156,10 @@ def add_mood_to_filtered():
                 add_mood = request.form["added-mood"]
                 if add_mood != "":
                     sel_mood = add_mood
-                print(sel_mood)
                 # get album mood
                 for key in request.form.keys():
                     if key[0] == 'T': #check if key is for a track
-                        print(key)
+
                         track = request.form[key]
                         try:         
                             print(sel_mood)        
@@ -1187,18 +1184,16 @@ def add_album_moods():
     albums = []
 
     if request.method == 'POST':
-        print("here3")
         
         try:
             if "username" in session:
                 sel_mood = ""
                 if "select-album-mood" in request.form:
                     sel_mood = request.form["select-album-mood"]
-                print(sel_mood)
                 add_mood = request.form["add-album-mood"]
                 if add_mood != "":
                     sel_mood = add_mood
-                print(sel_mood)
+
                 # get album mood
                 for key in request.form.keys():
                     if key[0] == 'Q': #check if key is for a track

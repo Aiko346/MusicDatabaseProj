@@ -1,0 +1,31 @@
+
+<html>
+
+    <body>
+        <p><a href="/">Home</a></p>
+        <p>Add a mood to the albums below:</p>
+        <form method="POST" action="/moods" > 
+            <fieldset style='height: 300px; overflow-y:auto'>
+                <legend>Albums</legend>
+                {% for n in album_options %}
+                <input type="checkbox" id="{{ n.id }}" name="{{ 'Q' ~ loop.index }}" value="{{ n.id }}">
+                <label for="{{ 'Q' ~ loop.index }}">{{ n["name"] }}</label><br>
+            </fieldset>
+
+            <fieldset style='height: 300px; overflow-y:auto'>
+                <legend>Mood Options</legend>
+                {% for n in mood_options %}
+                <input type="radio" id="{{ 'Z' ~ n.name }}" name="{{ select-album-mood }}" value="{{ n.name }}">
+                <label for="{{ 'Z' ~ n.name }}">{{ n["name"] }}</label><br>
+                {% endfor %}
+
+            </fieldset>
+            <input type="text" id="added-album-mood" name="added-album-mood">
+            <label for="added-album-mood">Other</label><br>
+            <input type="submit" value="Assign Mood">
+        </form>
+    
+        <p>"Mood has been assigned successfully".</p>  
+    </body>
+    
+    </html>

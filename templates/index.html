@@ -13,7 +13,7 @@
   <p><a href="logout">Logout</a></p>
   <p><a href="fill-home">Get data from Spotify.</a> Will only add data, not remove anything.</p>
   <p><a href="recommendations">Get recommendations based on mood</a></p>
-  <p><a href="album-mood">Assign moods to your albums</a></p>
+  <p><a href="moods">Assign moods to your albums</a></p>
   
   <div style='max-height: 800px; overflow-y:auto; overflow-x:auto; max-width: 800px;'>
     <table border=1 id="tracks" >
@@ -118,7 +118,7 @@
     <fieldset style='height: 300px; overflow-y:auto'>
       <legend>Mood Options</legend>
       {% for n in mood_options %}
-      <input type="radio" id="{{ 'Check' ~ n.name }}" name="selected_mood" value="{{ n.name }}">
+      <input type="radio" id="{{ 'Check' ~ n.name }}" name="selected-mood" value="{{ n.name }}">
       <label for="{{ 'Check' ~ n.name }}">{{ n["name"] }}</label><br>
      
       {% endfor %}
@@ -151,7 +151,7 @@
     <p>Add the retrieved songs to a new playlist:</p>
     <fieldset>
       <legend>Created Playlists</legend>
-      {% for n in new_playlists %}
+      {% for n in new_playlist_options %}
       <input type="radio" id="{{ loop.index }}" name="selected-new-playlist" value="{{ n.len ~ n.description ~ n.name }}">
       <label for="{{ n.len ~ n.description ~ n.name }}">{n.name} | {n.description}</label><br>
       {% endfor %}
@@ -159,18 +159,19 @@
 
     <div style="display: none">
       {% for n in tracks %}
-      <input type="checkbox" id="{{ n.id }}" name="{{ n.id }}" value="{{ n.id }}" checked></input>
+      <input type="checkbox" id="{{ n }}" name="{{ 'T' ~ n }}" value="{{ n }}" checked></input>
       {% endfor %}
       <input type="text" id="playlist-name" name="playlist-name">
     </div>
-    <input type="submit" value="Add To New Playlist">
+    
+    <input type="submit" value="Add Filtered Tracks To New Playlist">
   </form>
 
   <form method="POST" action="/new-playlist-to-spotify" id="filtering-form">
     <p> Pick a playlist to add to your Spotify:</p>
     <fieldset>
       <legend>Created Playlists</legend>
-      {% for n in new_playlists %}
+      {% for n in new_playlist_options %}
       <input type="radio" id="{{ loop.index }}" name="new-spotify-playlist" value="{{ n.len ~ n.description ~ n.name }}">
       <label for="{{ n.len ~ n.description ~ n.name }}">{n.name} | {n.description}</label><br>
       {% endfor %}

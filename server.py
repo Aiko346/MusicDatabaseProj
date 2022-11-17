@@ -231,7 +231,7 @@ def index():
             for result in cursor:
                 # can also be accessed using result[0]
                 new_playlist_options.append(
-                    {'name': result['name'], 'id': result['description']})
+                    {'name': result['name'], 'description': result['description']})
 
 
 
@@ -1130,6 +1130,9 @@ def add_mood_to_filtered():
 @app.route('/moods', methods=["POST", "GET"])
 def add_album_moods():
 
+    moods = []
+    albums = []
+
     if request.method == 'POST':
         try:
             if "username" in session:
@@ -1156,10 +1159,58 @@ def add_album_moods():
                     except Exception as e:  # may already exist
                         print(e)
                         pass
+        #context = dict(album_options=)
+        #return render_template("moods.html", **context)
+            else:
+                return redirect("/logout")
         except Exception as e:
             print(e)
-        #context = dict(album_options=)
-    #return render_template("moods.html", **context)
+            return redirect("/")
+    try:
+        if "username" in session:
+
+            # all albums associated with tracks on one of the user's existing playlists or Recommendations
+            cursor = g.conn.execute(
+                """
+                    SELECT DISTINCT A.name, A.id
+                    FROM Released_On R, Tracks T, Albums A, Saved_To S, existing_user_playlists E
+                    WHERE A.id=R.album_id AND R.track_id=S.track_id AND S.existing_playlist_id=E.id AND E.username=%s
+                    UNION
+                    SELECT DISTINCT A.name, A.id
+                    FROM Released_On R, Tracks T, Albums A, Added_To AD
+                    WHERE A.id=R.album_id AND
+                    AD.track_id=R.track_id AND AD.new_playlist_username=%s AND AD.new_playlist_name=%s AND AD.new_playlist_description=%s
+                    ORDER BY name
+                    LIMIT 100
+                    """, session['username'], session['username'], "Recommendations", "")
+            for result in cursor:
+                # can also be accessed using result[0]
+                albums.append(
+                    {'name': result['name'], 'id': result['id']})  
+
+            # all moods from this user
+            cursor = g.conn.execute(
+                """
+                    SELECT DISTINCT M.mood as name
+                    FROM assigned_Mood_To M
+                    WHERE M.username=%s
+                    UNION
+                    SELECT DISTINCT M.mood as name
+                    FROM assigned_Mood_To2 M
+                    WHERE M.username=%s
+                    ORDER BY name
+                    """, session['username'], session['username'])
+            for result in cursor:
+                moods.append(result["name"])
+
+
+            context = dict(albums=albums, moods=moods)
+            return render_template('moods.html', **context)
+        else:
+            return redirect("/logout")
+    except Exception as e:
+        print(e)
+        return redirect("/")
 
 if __name__ == "__main__":
     import click

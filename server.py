@@ -337,7 +337,7 @@ def recommendations():
                 # print(tracks)
 
                 try:
-                    recs = sp.recommendations(seed_tracks=tracks)
+                    recs = sp.recommendations(seed_tracks=tracks, limit=10)
                 except Exception as e:
                     return redirect("/logout")
 
@@ -1158,6 +1158,8 @@ def add_album_moods():
                         pass
         except Exception as e:
             print(e)
+        #context = dict(album_options=)
+    #return render_template("moods.html", **context)
 
 if __name__ == "__main__":
     import click

@@ -5,7 +5,7 @@
     <p>Get spotify recommendations for the below mood:</p>
     <form method="POST" action="/recommendations" >
         <fieldset style='height: 300px; overflow-y:auto'>
-            {% for n in mood_options %}
+            {% for n in moods %}
             <input type="checkbox" id="{{ n }}" name="{{ loop.index }}" value="{{ n }}">
             <label for="{{ loop.index }}">{{ n }}</label><br>
             {% endfor %}

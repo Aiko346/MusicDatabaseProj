@@ -10,6 +10,7 @@
                 {% for n in album_options %}
                 <input type="checkbox" id="{{ n.id }}" name="{{ 'Q' ~ loop.index }}" value="{{ n.id }}">
                 <label for="{{ 'Q' ~ loop.index }}">{{ n["name"] }}</label><br>
+                {% endfor %}
             </fieldset>
 
             <fieldset style='height: 300px; overflow-y:auto'>

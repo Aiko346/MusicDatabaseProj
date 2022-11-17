@@ -191,7 +191,9 @@
         //selects each set of filtering options and hides them by default
       });
       $("#filtering-form").click(function () {
-         //when the filtering-form has a 
+         //when the filtering-form detects a click, an option being selected
+         //causes the respective form of options to appear
+         //and the rest to disappear
         options.forEach(function (option) {
           if ($("#" + option).is(":checked")) {
             $("#" + option + "-options").show();

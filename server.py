@@ -1096,12 +1096,16 @@ def playlist_to_spotify():
 # assign mood to filtered tracks
 @app.route('/mood-to-filtered', methods=["POST", "GET"])
 def add_mood_to_filtered():
-
     if request.method == 'POST':
         try:
             if "username" in session:
-
-                sel_mood = request.form["selected-mood"]
+                sel_mood = ""
+                if "selected-mood" in request.form:
+                    sel_mood = request.form["selected-mood"]
+                add_mood = request.form["added-mood"]
+                if add_mood != "":
+                    sel_mood = add_mood
+                print(sel_mood)
                 # get album mood
                 for key in request.form.keys():
                     if key[0] == 'T': #check if key is for a track
@@ -1113,19 +1117,11 @@ def add_mood_to_filtered():
                             '''INSERT INTO Assigned_Mood_To (track_id, username, mood) VALUES 
                             (%s, %s, %s)''', track, session["username"], sel_mood)
                         except Exception as e:  # may already exist
-                            print(e)
-                            pass
-                add_mood = request.form["added-mood"]
-                print(add_mood)
-                if add_mood != "":
-                    print(add_mood)
-                    try:   
-                        g.conn.execute(
-                        '''INSERT INTO Assigned_Mood_To (track_id, username, mood) VALUES 
-                        (%s, %s, %s)''', track, session["username"], add_mood)
-                    except Exception as e:  # may already exist
-                        print(e)
-                        pass
+                            try:
+                                g.conn.execute(
+                                '''UPDATE Assigned_Mood_To SET mood=%s WHERE track_id=%s AND username=%s''', sel_mood, track, session["username"])
+                            except Exception as e:
+                                print(e)
         except Exception as e:
             print(e)
     return redirect('/')

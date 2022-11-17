@@ -5,7 +5,6 @@ import os
 from flask import Flask, redirect, url_for, request
 from typing import ItemsView
 import requests
-# import json
 from spotipy.oauth2 import SpotifyOAuth
 import spotipy
 import spotipy.util as util
@@ -26,15 +25,14 @@ Go to http://localhost:8111 in your browser.
 A debugger such as "pdb" may be helpful for debugging.
 Read about it online.
 """
-# accessible as a variable in index.html:
+
 
 tmpl_dir = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
 app.debug = True
 app.secret_key = '648e2097fec28316b68b70c56305fdb7d2c07c82e4f00fce04e26ff0230eb3e4'
-# app.config['SECRET_KEY'] = '648e2097fec28316b68b70c56305fdb6d2c07c82e4f00fce04e26ff0230eb3e4'
-# toolbar = DebugToolbarExtension(app)
+
 
 #
 # The following is a dummy URI that does not connect to a valid database. You will need to modify it to connect to your Part 2 database in order to use the data.
@@ -85,19 +83,6 @@ def teardown_request(exception):
     except Exception as e:
         pass
 
-
-# @app.route is a decorator around index() that means:
-#   run index() whenever the user tries to access the "/" path using a GET request
-#
-# If you wanted the user to go to, for example, localhost:8111/foobar/ with POST or GET then you could use:
-#
-#       @app.route("/foobar/", methods=["POST", "GET"])
-#
-# PROTIP: (the trailing / in the path is important)
-#
-# see for routing: https://flask.palletsprojects.com/en/2.0.x/quickstart/?highlight=routing
-# see for decorators: http://simeonfranklin.com/blog/2012/jul/1/python-decorators-in-12-steps/
-#
 @app.route('/', methods=["GET", "POST"])
 def index():
     """
@@ -239,51 +224,16 @@ def index():
             print(e)
             return redirect("/logout")
 
-
-    #
-    # Flask uses Jinja templates, which is an extension to HTML where you can
-    # pass data to a template and dynamically generate HTML based on the data
-    # (you can think of it as simple PHP)
-    # documentation: https://realpython.com/primer-on-jinja-templating/
-    #
-    # You can see an example template in templates/index.html
-    #
-    # context are the variables that are passed to the template.
-    # for example, "data" key in the context variable defined belosw will be
-    # accessible as a variable in index.html:
-    #
-    #     # will print: [u'grace hopper', u'alan turing', u'ada lovelace']
-    #     <div>{{data}}</div>
-    #
-    #     # creates a <div> tag for each element in data
-    #     # will print:
-    #     #
-    #     #   <div>grace hopper</div>
-    #     #   <div>alan turing</div>
-    #     #   <div>ada lovelace</div>
-    #     #
-    #     {% for n in data %}
-    #     <div>{{n}}</div>
-    #     {% endfor %}
-    #
-    # testlist = ["a", "b", "c"]
-    # album_options = [{"id": "a", "name": "aname"}, {"id": "b", "name": "bname"}]
-
     context = dict(genre_options=genre_options, tracks=tracks, liked_by_options=liked_by_options, mood_options=mood_options,
                    album_options=album_options, playlist_options=playlist_options, artist_options=artist_options,
                    new_playlist_options=new_playlist_options)
 
-    #
-    # render_template looks in the templates/ folder for files.
-    # for example, the below file reads template/index.html
-    #
     return render_template("index.html", **context)
 
 
 @app.route('/logout')
 def logout():
     session.clear()
-    #print(session.keys())
     return redirect('/')
 
 
@@ -1062,7 +1012,6 @@ def playlist_to_spotify():
                     name, 
                     desc)
                 update_set(tracks, cursor)
-
 
                 t = sp.user_playlist_add_tracks(
                     session['username'], 

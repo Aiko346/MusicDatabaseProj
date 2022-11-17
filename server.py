@@ -926,9 +926,20 @@ def filtered_to_playlist():
                 new_playlist = request.form['selected-new-playlist']
 
                 if new_playlist != "":
-                    len = int(new_playlist[0])
-                    name = new_playlist[1:len+1]
-                    description = new_playlist[len+1:]
+
+                    pos_c = 1
+                    len = 0
+                    for c in new_playlist:
+
+                        if c == ' ':
+                            pos_c = new_playlist.index(' ')
+                            len = int(new_playlist[:pos_c])
+                            break
+
+
+                    name = new_playlist[pos_c+1:pos_c+len+1]
+                    description = new_playlist[pos_c+len+1:]
+
 
                     for key in request.form.keys():
                         if key[0] == 'T': #check if key is for a track
@@ -967,9 +978,18 @@ def playlist_to_spotify():
         if "username" in session:
             try:
                 new_playlist = request.form['new-spotify-playlist']
-                len = int(new_playlist[0])
-                name = new_playlist[1:len+1]
-                desc = new_playlist[len+1:]
+
+                pos_c = 1
+                len = 0
+
+                for c in new_playlist:
+                    if c == ' ':
+                        pos_c = new_playlist.index(' ')
+                        len = int(new_playlist[:pos_c])
+                        break
+
+                name = new_playlist[pos_c+1:pos_c+len+1]
+                desc = new_playlist[pos_c+len+1:]
 
                 user_id = sp.me()["id"]
 
@@ -977,7 +997,6 @@ def playlist_to_spotify():
                     user_id,
                     name, 
                     public = True,
-                    collaborative = False, 
                     description = desc)
 
                 playlist_id = new_playlist["id"]

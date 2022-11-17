@@ -231,7 +231,7 @@ def index():
             for result in cursor:
                 # can also be accessed using result[0]
                 new_playlist_options.append(
-                    {'name': result['name'], 'id': result['id']})
+                    {'name': result['name'], 'id': result['description']})
 
 
 
@@ -763,12 +763,13 @@ def login():
             if i != 1:
                 # if it fails, go back to login page
                 return render_template("login.html")
+            print(i)
         except Exception as e:
             print(e)
             return render_template("login.html")
 
         session['username'] = username
-
+        print("here")
         return redirect('/')
     return render_template("login.html")
 

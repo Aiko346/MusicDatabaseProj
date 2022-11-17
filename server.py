@@ -1126,8 +1126,8 @@ def add_mood_to_filtered():
     return redirect('/')
             
 # assign mood to albums
-@app.route('/mood-to-albums', methods=["POST", "GET"])
-def add_album_mood():
+@app.route('/moods', methods=["POST", "GET"])
+def add_album_moods():
 
     if request.method == 'POST':
         try:

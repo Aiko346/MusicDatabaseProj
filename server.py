@@ -886,7 +886,9 @@ def filter():
             #print("here")
             # moods
             mood_track_ids = set()
+            
             for mood in requested["M"]:
+                print(mood)
                 cursor = g.conn.execute(
                     """
           SELECT DISTINCT R.track_id AS id
@@ -913,23 +915,10 @@ def filter():
                 update_set(genre_track_ids, cursor)
             if len(requested["G"]) > 0:
                 results.append(genre_track_ids)
-            
-           
-
-
+         
             # find intersection of filters that had any selections
             track_ids = set()
-            # if nothing selected, show all tracks on user's stored playlists
-
-            # if len(results) == 0:
-            #   cursor = g.conn.execute(
-            #     """
-            #     SELECT S.track_id AS id
-            #     FROM Tracks T
-            #     WHERE E.username=%s
-            #     LIMIT 1000
-            #     """, session['username'])
-            #   update_set(track_ids, cursor)
+           
 
             if len(results) > 0:
                 track_ids = results.pop()
@@ -1002,11 +991,11 @@ def filter():
                     LIMIT 200
                     """, id, min_pop, max_pop, min_dur, max_dur)
                     update_tracks(cursor, tracks)
-                    print("missing")
-                    print(tracks)
+                   # print("missing")
+                   # print(tracks)
                 else: 
                     update_tracks(cursor_copy, tracks)
-                    print(tracks)
+                   # print(tracks)
         else:
             return redirect("/logout")
     except Exception as e:

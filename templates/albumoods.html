@@ -16,8 +16,8 @@
         <fieldset style='height: 300px; overflow-y:auto'>
             <legend>Mood Options</legend>
             {% for n in moods %}
-            <input type="radio" id="{{ 'Z' ~ n.name }}" name="{{ select-album-mood }}" value="{{ n.name }}">
-            <label for="{{ 'Z' ~ n.name }}">{{ n["name"] }}</label><br>
+            <input type="radio" id="{{ n }}" name="select-album-mood" value="{{ n }}">
+            <label for="{{ n }}">{{ n }}</label><br>
             {% endfor %}
 
         </fieldset>

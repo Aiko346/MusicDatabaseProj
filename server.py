@@ -244,7 +244,7 @@ def recommendations():
     recommendations = {}
     if request.method == 'POST':
         try:
-            redirect_uri = "http://10.142.0.2:8111/data-processing"
+            redirect_uri = "http://34.139.118.58:8111/data-processing"
             auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
                 session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
             session["access_token"] = auth.get_cached_token()["access_token"]
@@ -416,7 +416,7 @@ def recommendations():
 @app.route('/get-data')
 def get_data():
     try:
-        redirect_uri = "http://10.142.0.2:8111/data-processing"
+        redirect_uri = "http://34.139.118.58:8111/data-processing"
         auth = spotipy.oauth2.SpotifyOAuth(
             client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes, show_dialog=True)
     except Exception as e:
@@ -428,7 +428,7 @@ def get_data():
 @app.route('/data-processing')
 def data_processing():
     try:
-        redirect_uri = "http://10.142.0.2:8111/data-processing"
+        redirect_uri = "http://34.139.118.58:8111/data-processing"
         auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
             session), show_dialog=True, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
 
@@ -446,7 +446,7 @@ def data_processing():
 @app.route('/fill-home')
 def fill_home():  # put data from spotify into SQL
     try:
-        redirect_uri = "http://10.142.0.2:8111/data-processing"
+        redirect_uri = "http://34.139.118.58:8111/data-processing"
         auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
             session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
         session["access_token"] = auth.get_cached_token()["access_token"] #internally checks if it's expired
@@ -589,7 +589,7 @@ def add_friend():
 
             if request.form["friend-id"] != "":
                 try:
-                    redirect_uri = "http://10.142.0.2:8111/data-processing"
+                    redirect_uri = "http://34.139.118.58:8111/data-processing"
                     auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
                         session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
                     session["access_token"] = auth.get_cached_token()["access_token"] #internally checks if it's expired
@@ -977,7 +977,7 @@ def playlist_to_spotify():
 
     if request.method == 'POST':
         try:
-            redirect_uri = "http://10.142.0.2:8111/data-processing"
+            redirect_uri = "http://34.139.118.58:8111/data-processing"
             auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
                 session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
             session["access_token"] = auth.get_cached_token()["access_token"]

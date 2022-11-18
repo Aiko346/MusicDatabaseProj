@@ -38,7 +38,7 @@ jQuery Usage:
 jQuery was used to make the sets of filtering options disappear or appear depending on which
 radio button is selected. It is in index.html in a <script> tag at the bottom.
 
-Also, note that on startup the program asks for the cloud machine's current external IP - this is because the IP is needed 
+Also, note that on startup the program asks for the cloud machine's current external IP - this is because the IP needed 
 internally for the Spotify API has to be the external IP on the cloud machine (localhost, internal IP etc. did not work). Since
 it can change, we decided to ask for it as startup input to avoid literally changing the code each time we run it
-or asking for it intrusively in the web front-end. 
+or asking for it intrusively on the web frontend. 

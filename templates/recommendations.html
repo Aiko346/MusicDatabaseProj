@@ -1,16 +1,26 @@
 <html>
-
+    <style>
+        body {
+          font-size: 15pt;
+          font-family: arial;
+        }
+      </style>
 <body>
+    <h1>Recommendations</h1>
     <p><a href="/">Home</a></p>
-    <p>Get spotify recommendations for the below mood:</p>
+    
     <form method="POST" action="/recommendations" >
-        <fieldset style='height: 300px; overflow-y:auto'>
+        <fieldset style='max-height: 300px; overflow-y:auto'>
+            <legend>Moods:</legend>
+            <p>Get spotify recommendations based on your tracks of the below mood:</p>
             {% for n in moods %}
             <input type="checkbox" id="{{ n }}" name="{{ loop.index }}" value="{{ n }}">
             <label for="{{ loop.index }}">{{ n }}</label><br>
             {% endfor %}
+            <br>
+            <input type="submit" value="Get recommendations">
         </fieldset>
-        <input type="submit" value="Get recommendations">
+        
     </form>
 
     <p>The below are now in the database on a new playlist called "Recommendations".</p>

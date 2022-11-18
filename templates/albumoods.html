@@ -1,30 +1,38 @@
 
 <html>
-
+    <style>
+        body {
+          font-size: 15pt;
+          font-family: arial;
+        }
+     </style>
 <body>
+    <h1>Add Moods to Albums</h1>
     <p><a href="/">Home</a></p>
-    <p>Add a mood to the albums below:</p>
+    
     <form method="POST" action="/albumoods" > 
-        <fieldset style='height: 300px; overflow-y:auto'>
+        <fieldset style='height: 400px; overflow-y:auto'>
             <legend>Albums</legend>
+            <p>Add a mood to the albums below:</p>
             {% for n in albums %}
             <input type="checkbox" id="{{ n.id }}" name="{{ 'Q' ~ loop.index }}" value="{{ n.id }}">
             <label for="{{ 'Q' ~ loop.index }}">{{ n["name"] }}</label><br>
             {% endfor %}
         </fieldset>
 
-        <fieldset style='height: 300px; overflow-y:auto'>
-            <legend>Mood Options</legend>
+        <fieldset style='max-height: 400px; overflow-y:auto'>
+            <legend>Mood Options:</legend>
             {% for n in moods %}
             <input type="radio" id="{{ n }}" name="select-album-mood" value="{{ n }}">
             <label for="{{ n }}">{{ n }}</label><br>
             {% endfor %}
-
-        </fieldset>
-        <p>Or (only one mood can be applied at a time!)</p>
+            <p>OR create a new mood: (only one mood can be applied to an album at a time!)</p>
         <input type="text" id="add-album-mood" name="add-album-mood">
         <label for="add-album-mood">Other</label><br>
+        <br>
         <input type="submit" value="Assign Mood">
+        </fieldset>
+        
     </form>
 
 </body>

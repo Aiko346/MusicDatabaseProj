@@ -145,7 +145,7 @@ def index():
       WHERE A.id=R.album_id AND
       AD.track_id=R.track_id AND AD.new_playlist_username=%s AND AD.new_playlist_name=%s AND AD.new_playlist_description=%s
       ORDER BY name
-      LIMIT 100
+      LIMIT 150
       """, session['username'], session['username'], "Recommendations", "")
             for result in cursor:
                 # can also be accessed using result[0]
@@ -462,261 +462,267 @@ def fill_home():  # put data from spotify into SQL
     except Exception:
         return redirect("/get-data")
 
-    for item in playlist_info["items"]:
+    try: 
+        for item in playlist_info["items"]:
 
-        playlist_data = sp.user_playlist(user=item["owner"]["id"],
-                                         playlist_id=item["id"], fields="tracks,id,next,name,total")
+            playlist_data = sp.user_playlist(user=item["owner"]["id"],
+                                            playlist_id=item["id"], fields="tracks,id,next,name,total")
 
-        playlist = playlist_data["tracks"]
+            playlist = playlist_data["tracks"]
 
-        try:
-            g.conn.execute(
-                '''INSERT INTO Existing_User_Playlists (id, username, name, length) VALUES 
-          (%s, %s, %s, %s)''',
-                playlist_data["id"], session["username"], playlist_data["name"], playlist['total'])
-        except Exception as e:
-            print(e)
+            try:
+                g.conn.execute(
+                    '''INSERT INTO Existing_User_Playlists (id, username, name, length) VALUES 
+            (%s, %s, %s, %s)''',
+                    playlist_data["id"], session["username"], playlist_data["name"], playlist['total'])
+            except Exception as e:
+                print(e)
 
-        # added to limit download time. In the future, could be made more efficient by combining inserts.
-        count = 0
-        
-        while playlist != None and count < 30:
-            print("test")
-            for track_info in playlist["items"]:
-                count = count + 1
-                track = track_info["track"]
-                
-                try:
+            # added to limit download time. In the future, could be made more efficient by combining inserts.
+            count = 0
+            
+            while playlist != None and count < 30:
+                for track_info in playlist["items"]:
+                    count = count + 1
+                    track = track_info["track"]
+                    
                     try:
-                        g.conn.execute(
-                            '''INSERT INTO Tracks (id, name, popularity, duration, release_date) VALUES 
-                  (%s, %s, %s, %s, %s)''',
-                            track["id"], track["name"], track["popularity"], track["duration_ms"], track["album"]["release_date"])
-                    except Exception as e:
-                        print(e)
-
-                    try:
-                        g.conn.execute(
-                            '''INSERT INTO Saved_To (track_id, existing_playlist_id, date_added) VALUES 
-                  (%s, %s, %s)''',
-                            track["id"], playlist_data["id"], track_info["added_at"][:10])
-                    except Exception as e:
-                        print(e)
-
-                    try:
-                        # albums
-                        if track["album"]["album_type"] == "album":
+                        try:
                             g.conn.execute(
-                                '''INSERT INTO Albums (id, name, release_date) VALUES  
-                        (%s, %s, %s)''',
-                                track["album"]["id"], track["album"]["name"], track["album"]["release_date"])
-                    except Exception as e:
-                        print(e)
+                                '''INSERT INTO Tracks (id, name, popularity, duration, release_date) VALUES 
+                    (%s, %s, %s, %s, %s)''',
+                                track["id"], track["name"], track["popularity"], track["duration_ms"], track["album"]["release_date"])
+                        except Exception as e:
+                            print(e)
 
-                    try:
-                        for artist in track["artists"]:
+                        try:
+                            g.conn.execute(
+                                '''INSERT INTO Saved_To (track_id, existing_playlist_id, date_added) VALUES 
+                    (%s, %s, %s)''',
+                                track["id"], playlist_data["id"], track_info["added_at"][:10])
+                        except Exception as e:
+                            print(e)
 
-                            artist_data = sp.artist(artist["id"])
-  
-                            try:
-                                # Artists
-                                g.conn.execute(
-                                    '''INSERT INTO Artists (id, name, popularity) VALUES     
-                        (%s, %s, %s)''', artist["id"], artist["name"], artist_data["popularity"])
-                            except Exception as e:
-                                print(e)
-
-                            try:
-                                collaboration = "FALSE"
-                                if len(track["artists"]) > 1:
-                                    collaboration = "TRUE"
-
-                                g.conn.execute(
-                                    '''INSERT INTO Is_On (artist_id, track_id, collaboration) VALUES  
-                        (%s, %s, %s)''', artist["id"], track["id"], collaboration)
-                            except Exception as e:
-                                print(e)
-
-                            for genre in artist_data["genres"]:
-                                # Genres
-                                try:
-                                    g.conn.execute(
-                                        '''INSERT INTO Genres (genre) VALUES   
-                            (%s)''', genre)
-                                except Exception as e:
-                                    print(e)
-
-                                try:
-                                    g.conn.execute(
-                                        '''INSERT INTO Is_In (artist_id, genre) VALUES    
-                            (%s, %s)''', artist["id"], genre)
-                                except Exception as e:
-                                    print(e)
-
+                        try:
+                            # albums
                             if track["album"]["album_type"] == "album":
-                                album_by_artist = "FALSE"
+                                g.conn.execute(
+                                    '''INSERT INTO Albums (id, name, release_date) VALUES  
+                            (%s, %s, %s)''',
+                                    track["album"]["id"], track["album"]["name"], track["album"]["release_date"])
+                        except Exception as e:
+                            print(e)
 
-                                for album_artist in track["album"]["artists"]:
-                                    if album_artist["id"] == artist["id"]:
-                                        album_by_artist = "TRUE"
+                        try:
+                            for artist in track["artists"]:
 
+                                artist_data = sp.artist(artist["id"])
+    
                                 try:
+                                    # Artists
                                     g.conn.execute(
-                                        '''INSERT INTO released_on (artist_id, track_id, album_id, album_by_artist) VALUES  
-                            (%s, %s, %s, %s)''', artist["id"], track["id"], track["album"]["id"], album_by_artist)
+                                        '''INSERT INTO Artists (id, name, popularity) VALUES     
+                            (%s, %s, %s)''', artist["id"], artist["name"], artist_data["popularity"])
                                 except Exception as e:
                                     print(e)
+
+                                try:
+                                    collaboration = "FALSE"
+                                    if len(track["artists"]) > 1:
+                                        collaboration = "TRUE"
+
+                                    g.conn.execute(
+                                        '''INSERT INTO Is_On (artist_id, track_id, collaboration) VALUES  
+                            (%s, %s, %s)''', artist["id"], track["id"], collaboration)
+                                except Exception as e:
+                                    print(e)
+
+                                for genre in artist_data["genres"]:
+                                    # Genres
+                                    try:
+                                        g.conn.execute(
+                                            '''INSERT INTO Genres (genre) VALUES   
+                                (%s)''', genre)
+                                    except Exception as e:
+                                        print(e)
+
+                                    try:
+                                        g.conn.execute(
+                                            '''INSERT INTO Is_In (artist_id, genre) VALUES    
+                                (%s, %s)''', artist["id"], genre)
+                                    except Exception as e:
+                                        print(e)
+
+                                if track["album"]["album_type"] == "album":
+                                    album_by_artist = "FALSE"
+
+                                    for album_artist in track["album"]["artists"]:
+                                        if album_artist["id"] == artist["id"]:
+                                            album_by_artist = "TRUE"
+
+                                    try:
+                                        g.conn.execute(
+                                            '''INSERT INTO released_on (artist_id, track_id, album_id, album_by_artist) VALUES  
+                                (%s, %s, %s, %s)''', artist["id"], track["id"], track["album"]["id"], album_by_artist)
+                                    except Exception as e:
+                                        print(e)
+                        except Exception as e:
+                            print(e)
                     except Exception as e:
                         print(e)
-                except Exception as e:
-                    print(e)
 
-                if count >= 30:
-                    break
-            if "next" in playlist:
-                playlist = sp.next(playlist)
-            else:
-                playlist = None
-
+                    if count >= 30:
+                        break
+                if "next" in playlist:
+                    playlist = sp.next(playlist)
+                else:
+                    playlist = None
+    except Exception as e:
+        print(e)
     return redirect("/")
 
 
 @app.route('/add-friend', methods=["GET", "POST"])
 def add_friend():
+    try:
+        if request.method == 'POST':
 
-    if request.method == 'POST':
-
-        if request.form["friend-id"] != "":
-            try:
-                redirect_uri = "http://localhost:8111/data-processing"
-                auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
-                    session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
-                session["access_token"] = auth.get_cached_token()["access_token"] #internally checks if it's expired
-                session["refresh_token"] = auth.get_cached_token()["refresh_token"]
-                sp = spotipy.Spotify(auth=session["access_token"])
-                
-            except Exception:
-                return redirect("/logout")
-           
-            user_info = sp.user(request.form["friend-id"])
-            display_name = user_info["display_name"]
-        
-            #add friend to sql
-            try:
-                g.conn.execute(
-                """INSERT INTO Friends (id, display_name) VALUES 
-                (%s, %s)""", request.form["friend-id"], display_name)
-            except Exception as e:
-                print(e)
-
-            #add is_friends_with to sql
-            try:
-                g.conn.execute(
-                """INSERT INTO Is_Friends_With (friend_id, username) VALUES 
-                (%s, %s)""", request.form["friend-id"], session["username"])
-            except Exception as e:
-                print(e)
-
-            user_playlist_info = sp.user_playlists(request.form["friend-id"], limit=2)  # 5 max
+            if request.form["friend-id"] != "":
+                try:
+                    redirect_uri = "http://localhost:8111/data-processing"
+                    auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
+                        session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
+                    session["access_token"] = auth.get_cached_token()["access_token"] #internally checks if it's expired
+                    session["refresh_token"] = auth.get_cached_token()["refresh_token"]
+                    sp = spotipy.Spotify(auth=session["access_token"])
+                    
+                except Exception:
+                    return redirect("/logout")
             
-            user_playlist_ids = []
-            for item in user_playlist_info["items"]:
-                user_playlist_ids.append(item["uri"])
+                user_info = sp.user(request.form["friend-id"])
+                display_name = user_info["display_name"]
             
-            # limit at 50 per playlist for speed
-            # check if tracks in Tracks for user already, if so create Liked_By relationship
-            user_tracks = set()
-            
-            for uri in user_playlist_ids:
-                friend_tracks = sp.user_playlist_tracks(
-                    request.form["friend-id"], uri[17:], limit = 50)
-                
-                for item in friend_tracks["items"]:
-                    user_tracks.add(item["track"]["id"])
-                   
-            
-            #check if each track can be found in an existing_playlist or Recommendation related to the user
-            #not checking every single song (no point in liking songs this user won't filter down to)
-            #if they can be found, create LIKED_BY 
-            liked_tracks=set()
-            
-            cursor = g.conn.execute(
-                """SELECT A.track_id AS id
-                FROM Added_To A 
-                WHERE A.new_playlist_username=%s AND A.new_playlist_name=%s AND A.new_playlist_description=%s
-                UNION 
-                SELECT S.track_id AS id
-                FROM Saved_To S, Existing_User_Playlists E
-                WHERE E.username=%s AND E.id=S.existing_playlist_id 
-                LIMIT 300
-                """, session['username'], "Recommendations", "", session['username'])
-
-            #check if each track is also liked by the friend
-            for result in cursor:
-                if result["id"] in user_tracks:
-                    liked_tracks.add(result["id"])
-                    print("match" + result["id"])
-
-            for t in liked_tracks:
+                #add friend to sql
                 try:
                     g.conn.execute(
-                        """INSERT INTO Liked_By (track_id, friend_id) VALUES 
-                        (%s, %s)""",
-                        t, request.form["friend-id"])
+                    """INSERT INTO Friends (id, display_name) VALUES 
+                    (%s, %s)""", request.form["friend-id"], display_name)
                 except Exception as e:
                     print(e)
 
-            # do sql query on each track id to get track name and artists
-            # 300 tracks max for reasonable response times
+                #add is_friends_with to sql
+                try:
+                    g.conn.execute(
+                    """INSERT INTO Is_Friends_With (friend_id, username) VALUES 
+                    (%s, %s)""", request.form["friend-id"], session["username"])
+                except Exception as e:
+                    print(e)
 
+                user_playlist_info = sp.user_playlists(request.form["friend-id"], limit=2)  # 5 max
+                
+                user_playlist_ids = []
+                for item in user_playlist_info["items"]:
+                    user_playlist_ids.append(item["uri"])
+                
+                # limit at 50 per playlist for speed
+                # check if tracks in Tracks for user already, if so create Liked_By relationship
+                user_tracks = set()
+                
+                for uri in user_playlist_ids:
+                    friend_tracks = sp.user_playlist_tracks(
+                        request.form["friend-id"], uri[17:], limit = 50)
+                    
+                    for item in friend_tracks["items"]:
+                        user_tracks.add(item["track"]["id"])
+                    
+                
+                #check if each track can be found in an existing_playlist or Recommendation related to the user
+                #not checking every single song (no point in liking songs this user won't filter down to)
+                #if they can be found, create LIKED_BY 
+                liked_tracks=set()
+                
+                cursor = g.conn.execute(
+                    """SELECT A.track_id AS id
+                    FROM Added_To A 
+                    WHERE A.new_playlist_username=%s AND A.new_playlist_name=%s AND A.new_playlist_description=%s
+                    UNION 
+                    SELECT S.track_id AS id
+                    FROM Saved_To S, Existing_User_Playlists E
+                    WHERE E.username=%s AND E.id=S.existing_playlist_id 
+                    LIMIT 300
+                    """, session['username'], "Recommendations", "", session['username'])
+
+                #check if each track is also liked by the friend
+                for result in cursor:
+                    if result["id"] in user_tracks:
+                        liked_tracks.add(result["id"])
+                        print("match" + result["id"])
+
+                for t in liked_tracks:
+                    try:
+                        g.conn.execute(
+                            """INSERT INTO Liked_By (track_id, friend_id) VALUES 
+                            (%s, %s)""",
+                            t, request.form["friend-id"])
+                    except Exception as e:
+                        print(e)
+
+                # do sql query on each track id to get track name and artists
+                # 300 tracks max for reasonable response times
+    except Exception as e:
+        print(e)
     return redirect("/")
 
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    print(session.keys())
-   
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+    try:
+        if request.method == 'POST':
+            username = request.form['username']
+            password = request.form['password']
 
-        # make sql call to check if this username/password combo is in the database:
-        try:
-            
-            cursor = g.conn.execute(
-                """SELECT DISTINCT U.username, U.password
-      FROM Users U
-      WHERE U.username=%s AND U.password=%s
-      """, username, password)
-            
-            i = 0
-            for result in cursor:
-                i = i + 1
-            if i != 1:
-                # if it fails, go back to login page
+            # make sql call to check if this username/password combo is in the database:
+            try:
+                
+                cursor = g.conn.execute(
+                    """SELECT DISTINCT U.username, U.password
+        FROM Users U
+        WHERE U.username=%s AND U.password=%s
+        """, username, password)
+                
+                i = 0
+                for result in cursor:
+                    i = i + 1
+                if i != 1:
+                    # if it fails, go back to login page
+                    return render_template("login.html")
+            except Exception as e:
+                print(e)
                 return render_template("login.html")
-        except Exception as e:
-            print(e)
-            return render_template("login.html")
 
-        session['username'] = username
-        return redirect('/')
+            session['username'] = username
+            return redirect('/')
+    except Exception as e:
+        print(e)
     return render_template("login.html")
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+    try:
+        if request.method == 'POST':
+            username = request.form['username']
+            password = request.form['password']
 
-        # sql call to add this username/password combo to the database:
-        try:
-            cursor = g.conn.execute(
-                """INSERT INTO Users (username, password) VALUES (%s, %s)""", username, password)
-        except:  # if it fails, show the register page again
-            return render_template("register.html")
-        return redirect('/')  # if it succeeds
+            # sql call to add this username/password combo to the database:
+            try:
+                cursor = g.conn.execute(
+                    """INSERT INTO Users (username, password) VALUES (%s, %s)""", username, password)
+            except:  # if it fails, show the register page again
+                return render_template("register.html")
+            return redirect('/')  # if it succeeds
+    except Exception as e:
+        print(e)
     return render_template("register.html")  # with "GET"
 
 
@@ -884,39 +890,46 @@ def filter():
 
 
 def update_set(set, cursor):
-    for result in cursor:
-        set.add(result["id"])
+    try:
+        for result in cursor:
+            set.add(result["id"])
+    except Exception as e:
+        print(e)
 
 
 def update_tracks(cursor, tracks):
-   
-    for result in cursor:
-        if "artist" in result:
-            if result["id"] in tracks:
-                tracks[result["id"]]["artist"].append(result["artist"])
+    try:
+        for result in cursor:
+            if "artist" in result:
+                if result["id"] in tracks:
+                    tracks[result["id"]]["artist"].append(result["artist"])
+                else:
+                    tracks[result["id"]] = {
+                        'name': result['name'], 'artist': [result['artist']]}
             else:
                 tracks[result["id"]] = {
-                    'name': result['name'], 'artist': [result['artist']]}
-        else:
-            tracks[result["id"]] = {
-                    'name': result['name'], 'artist': ["<Missing :(>"]}
-        if "popularity" in result:
-            tracks[result["id"]]["popularity"] = result["popularity"]
-        if "duration" in result:
-            tracks[result["id"]]["duration"] = result["duration"]
-        
+                        'name': result['name'], 'artist': ["<Missing :(>"]}
+            if "popularity" in result:
+                tracks[result["id"]]["popularity"] = result["popularity"]
+            if "duration" in result:
+                tracks[result["id"]]["duration"] = result["duration"]
+    except Exception as e:
+        print(e)
+
 @app.route('/create-new-playlist', methods=['POST'])
 def new_playlist():
-    name = request.form['playlist-name']
-    description = request.form['playlist-description']
-    g.conn.execute(
-        """INSERT INTO New_User_Playlists (name, description, username, date_created) VALUES 
-        (%s, %s, %s, %s)""", name, description, session["username"], date.today().strftime("%Y-%m-%d"))
-
+    try:
+        name = request.form['playlist-name']
+        description = request.form['playlist-description']
+        g.conn.execute(
+            """INSERT INTO New_User_Playlists (name, description, username, date_created) VALUES 
+            (%s, %s, %s, %s)""", name, description, session["username"], date.today().strftime("%Y-%m-%d"))
+    except Exception as e:
+        print(e)
     return redirect('/')
 
 # turn filtered tracks into new playlist
-@app.route('/filtered-to-new-playlist', methods=['POST'])
+@app.route('/filtered-to-new-playlist', methods=['POST', 'GET'])
 def filtered_to_playlist():
 
     if request.method == 'POST':
@@ -959,7 +972,7 @@ def filtered_to_playlist():
     return redirect('/')
 
 # add selected new playlist to spotify
-@app.route('/new-playlist-to-spotify', methods=['POST'])
+@app.route('/new-playlist-to-spotify', methods=['POST', 'GET'])
 def playlist_to_spotify():
 
     if request.method == 'POST':
@@ -980,16 +993,16 @@ def playlist_to_spotify():
                 new_playlist = request.form['new-spotify-playlist']
 
                 pos_c = 1
-                len = 0
+                l = 0
 
                 for c in new_playlist:
                     if c == ' ':
                         pos_c = new_playlist.index(' ')
-                        len = int(new_playlist[:pos_c])
+                        l = int(new_playlist[:pos_c])
                         break
 
-                name = new_playlist[pos_c+1:pos_c+len+1]
-                desc = new_playlist[pos_c+len+1:]
+                name = new_playlist[pos_c+1:pos_c+l+1]
+                desc = new_playlist[pos_c+l+1:]
 
                 user_id = sp.me()["id"]
 
@@ -1007,12 +1020,16 @@ def playlist_to_spotify():
                     """SELECT A.track_id AS id
                     FROM Added_To A
                     WHERE A.new_playlist_username=%s AND A.new_playlist_name=%s AND A.new_playlist_description=%s
-                    LIMIT 1000""", 
+                    LIMIT 100""", 
                     session['username'], 
                     name, 
                     desc)
                 update_set(tracks, cursor)
 
+                #spotipy only takes max 100 songs, take first 100
+                while len(tracks) > 100:
+                    tracks.pop()
+                    
                 t = sp.user_playlist_add_tracks(
                     session['username'], 
                     playlist_id, 
@@ -1061,9 +1078,7 @@ def add_album_moods():
 
     moods = []
     albums = []
-
     if request.method == 'POST':
-        
         try:
             if "username" in session:
                 sel_mood = ""
@@ -1096,7 +1111,6 @@ def add_album_moods():
             return redirect("/")
     try:
         if "username" in session:
-
             # all albums associated with tracks on one of the user's existing playlists or Recommendations
             cursor = g.conn.execute(
                 """

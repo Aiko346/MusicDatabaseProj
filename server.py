@@ -802,7 +802,7 @@ def filter():
                 update_set(mood_track_ids, cursor)
             if len(requested["M"]) > 0:
                 results.append(mood_track_ids)
-
+            
             # genres
             genre_track_ids = set()
             for genre in requested["G"]:

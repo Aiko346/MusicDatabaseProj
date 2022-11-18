@@ -22,7 +22,17 @@ the complexity for what was essentially a duplicate of assigning a mood to track
 
 Two most interesting features:
 
+One of the most interesting features is the filtering feature on the main page. SQL queries each time the main page is reloaded retrieve all
+the Artists, Moods (of Albums and Tracks), Albums, Existing Playlists, Friends, and Genres that are somehow associated with your account
+either through your username or by being related to your Existing Playlists (or the Recommendations Playlist created when you request recommendations
+through the app). Then, the user checks which ones they want to filter by, and SQL queries retrieve tracks that belong in the intersection of the 
+unions of the selected options for each category - for instance, selecting "Amy" and "Bob" as Artists and "First" as an Existing Playlist
+means that all tracks by Amy or Bob on First are retrieved. The queries also allow for tracks to be filtered by duration and popularity - the aforementioned
+query could be further filtered to be all tracks by Amy or Bob on First that are less than two minutes long. 
 
+The other most interesting feature is the ability to add Moods to Tracks and Albums. Added moods are inseerted into the appropriate tables of the
+database and made available for other features, allowing the user to customize their experience. Added moods are retrieved as filtering 
+options via SQL, and they are used to select sets of songs via SQL that are fed to Spotify to get more recommendations. 
 
 jQuery Usage:
 jQuery was used to make the sets of filtering options disappear or appear depending on which

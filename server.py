@@ -16,6 +16,10 @@ client_id = "67bdc4b1d4d74f5d88cdab031fee6a41"
 client_secret = "1a88af0b600d4ce3bf81c5191ae3aac0"
 scopes = "playlist-read-private,user-read-private,user-read-email,user-library-read, playlist-modify-public"
 
+result = requests.get("https://compute.googleapis.com/compute/v1/projects/cs4111-music/zones/us-east1-b/instances/cs4111-instance")
+externalIP = result["networkInterfaces"]["accessConfigs"]["natIP"]
+print("enable this IP on Spotify dev console: " + externalIP)
+
 """
 Columbia's COMS W4111.001 Introduction to Databases
 Example Webserver

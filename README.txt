@@ -30,10 +30,15 @@ unions of the selected options for each category - for instance, selecting "Amy"
 means that ultimately all tracks by Amy or Bob on First are retrieved. The SQL query that retrieves the tracks can also filter by duration and
 popularity - the aforementioned query could be further reduced to all tracks by Amy or Bob on First that are less than two minutes long. 
 
-The other most interesting feature is the ability to add Moods to Tracks and Albums. Added moods are inseerted into the appropriate tables of the
+The other most interesting feature is the ability to add Moods to Tracks and Albums. Added moods are inserted into the appropriate tables of the
 database and made available for other features, allowing the user to customize their experience. Added moods are retrieved as filtering 
 options via SQL, and they are used to select sets of songs via SQL that are fed to Spotify to get more recommendations. 
 
 jQuery Usage:
 jQuery was used to make the sets of filtering options disappear or appear depending on which
 radio button is selected. It is in index.html in a <script> tag at the bottom.
+
+Also, note that on startup the program asks for the cloud machine's current external IP - this is because the IP is needed 
+internally for the Spotify API has to be the external IP on the cloud machine (localhost, internal IP etc. did not work). Since
+it can change, we decided to ask for it as startup input to avoid literally changing the code each time we run it
+or asking for it intrusively in the web front-end. 

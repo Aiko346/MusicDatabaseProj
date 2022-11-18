@@ -10,15 +10,16 @@ import spotipy
 import spotipy.util as util
 from flask_debugtoolbar import DebugToolbarExtension
 from datetime import date
+import sys
 
 app = Flask(__name__)
 client_id = "67bdc4b1d4d74f5d88cdab031fee6a41"
 client_secret = "1a88af0b600d4ce3bf81c5191ae3aac0"
 scopes = "playlist-read-private,user-read-private,user-read-email,user-library-read, playlist-modify-public"
 
-result = requests.get("https://compute.googleapis.com/compute/v1/projects/cs4111-music/zones/us-east1-b/instances/cs4111-instance")
-externalIP = (result.json())["networkInterfaces"]["accessConfigs"]["natIP"]
-print("enable this IP on Spotify dev console: " + externalIP)
+external_ip = input("Enter the external IP so that the Spotify API can be configured:")
+print("External IP: " + external_ip)
+print("Enable this external IP on the Spotify dev console for the API to work!")
 
 """
 Columbia's COMS W4111.001 Introduction to Databases
@@ -248,7 +249,7 @@ def recommendations():
     recommendations = {}
     if request.method == 'POST':
         try:
-            redirect_uri = "http://34.139.118.58:8111/data-processing"
+            redirect_uri = "http://%s:8111/data-processing".format(external_ip)
             auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
                 session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
             session["access_token"] = auth.get_cached_token()["access_token"]
@@ -420,7 +421,7 @@ def recommendations():
 @app.route('/get-data')
 def get_data():
     try:
-        redirect_uri = "http://34.139.118.58:8111/data-processing"
+        redirect_uri = "http://%s:8111/data-processing".format(external_ip)
         auth = spotipy.oauth2.SpotifyOAuth(
             client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes, show_dialog=True)
     except Exception as e:
@@ -432,7 +433,7 @@ def get_data():
 @app.route('/data-processing')
 def data_processing():
     try:
-        redirect_uri = "http://34.139.118.58:8111/data-processing"
+        redirect_uri = "http://%s:8111/data-processing".format(external_ip)
         auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
             session), show_dialog=True, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
 
@@ -450,7 +451,7 @@ def data_processing():
 @app.route('/fill-home')
 def fill_home():  # put data from spotify into SQL
     try:
-        redirect_uri = "http://34.139.118.58:8111/data-processing"
+        redirect_uri = "http://%s:8111/data-processing".format(external_ip)
         auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
             session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
         session["access_token"] = auth.get_cached_token()["access_token"] #internally checks if it's expired
@@ -981,7 +982,7 @@ def playlist_to_spotify():
 
     if request.method == 'POST':
         try:
-            redirect_uri = "http://34.139.118.58:8111/data-processing"
+            redirect_uri = "http://%s:8111/data-processing".format(external_ip)
             auth = spotipy.oauth2.SpotifyOAuth(cache_handler=spotipy.cache_handler.FlaskSessionCacheHandler(
                 session), client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
             session["access_token"] = auth.get_cached_token()["access_token"]

@@ -13,8 +13,8 @@ from datetime import date
 import sys
 
 app = Flask(__name__)
-client_id = "67bdc4b1d4d74f5d88cdab031fee6a41"
-client_secret = "1a88af0b600d4ce3bf81c5191ae3aac0"
+client_id = ""
+client_secret = ""
 scopes = "playlist-read-private,user-read-private,user-read-email,user-library-read, playlist-modify-public"
 
 external_ip = input("Enter the external IP so that the Spotify API can be configured:")
@@ -36,7 +36,7 @@ tmpl_dir = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), 'templates')
 app = Flask(__name__, template_folder=tmpl_dir)
 app.debug = True
-app.secret_key = '648e2097fec28316b68b70c56305fdb7d2c07c82e4f00fce04e26ff0230eb3e4'
+app.secret_key = ''
 
 
 #
@@ -51,7 +51,7 @@ app.secret_key = '648e2097fec28316b68b70c56305fdb7d2c07c82e4f00fce04e26ff0230eb3
 #     DATABASEURI = "postgresql://gravano:foobar@34.75.94.195/proj1part2"
 #
 # DATABASEURI = "postgresql://alg2252:5368@34.75.94.195/proj1part2"
-DATABASEURI = "postgresql://na2852:1353@34.75.94.195/proj1part2"
+DATABASEURI = ""
 
 #
 # This line creates a database engine that knows how to connect to the URI above.

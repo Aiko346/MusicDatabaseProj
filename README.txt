@@ -1,7 +1,5 @@
-DATABASE URI: "postgresql://na2852:1353@34.75.94.195/proj1part2"
-URL: 34.139.118.58:811
-The above URL may change as we may not have the credits to keep our VM running until our meeting Monday, so our
-project mentor told us to just have it on for our demo and afterwards.
+DATABASE URI: [secret]
+URL: [secret]
 
 Parts of part 1 proposal implemented or not implemented:
 

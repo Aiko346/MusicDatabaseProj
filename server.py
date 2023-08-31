@@ -46,8 +46,6 @@ app.secret_key = ''
 # For example, if you had username gravano and password foobar, then the following line would be:
 #
 #     DATABASEURI = "postgresql://gravano:foobar@34.75.94.195/proj1part2"
-#
-# DATABASEURI = "postgresql://alg2252:5368@34.75.94.195/proj1part2"
 DATABASEURI = ""
 
 # Creates a database engine that knows how to connect to the URI above.

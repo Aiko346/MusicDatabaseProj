@@ -13,7 +13,7 @@ from datetime import date
 import sys
 
 app = Flask(__name__)
-client_id = ""
+client_id = "" 
 client_secret = ""
 scopes = "playlist-read-private,user-read-private,user-read-email,user-library-read, playlist-modify-public"
 
@@ -23,12 +23,9 @@ print("Enable this external IP on the Spotify dev console for the API to work!")
 
 """
 Columbia's COMS W4111.001 Introduction to Databases
-Example Webserver
 To run locally:
     python3 server.py
 Go to http://localhost:8111 in your browser.
-A debugger such as "pdb" may be helpful for debugging.
-Read about it online.
 """
 
 
@@ -40,7 +37,7 @@ app.secret_key = ''
 
 
 #
-# The following is a dummy URI that does not connect to a valid database. You will need to modify it to connect to your Part 2 database in order to use the data.
+# The following is a dummy URI that does not connect to a valid database. You will need to modify it to connect to your database.
 #
 # XXX: The URI should be in the format of:
 #
@@ -53,9 +50,7 @@ app.secret_key = ''
 # DATABASEURI = "postgresql://alg2252:5368@34.75.94.195/proj1part2"
 DATABASEURI = ""
 
-#
-# This line creates a database engine that knows how to connect to the URI above.
-#
+# Creates a database engine that knows how to connect to the URI above.
 engine = create_engine(DATABASEURI)
 
 

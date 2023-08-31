@@ -1,6 +1,8 @@
 DATABASE URI: [secret]
 URL: [secret]
 
+(Note: this project was submitted as a project for a databases class. The README was written as per instructor requirements, which is why it's not a typical README.)
+
 Parts of part 1 proposal implemented or not implemented:
 
 In our proposal, we said the user would log in via Spotify and have the ability to import their Spotify playlist data,
